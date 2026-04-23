@@ -45,21 +45,21 @@ export default function Navbar() {
               <Link to="/add">Add Listing</Link>
               <Link to="/my-listings">My Listings</Link>
               {isAdmin && (
-                <Link to="/admin" style={{ color: "var(--primary-color)", fontWeight: "bold" }}>
+                <Link to="/admin" style={{ color: "var(--primary-color)" }}>
                   Admin
                 </Link>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "10px", paddingLeft: "10px", borderLeft: "1px solid var(--border-color)" }}>
                 <span style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>{user.email}</span>
-                <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "5px 12px" }}>
+                <button onClick={handleLogout} className="btn btn-secondary">
                   Logout
                 </button>
               </div>
             </>
           ) : (
             <div style={{ display: "flex", gap: "10px" }}>
-              <Link to="/login" className="btn btn-secondary" style={{ padding: "5px 15px" }}>Login</Link>
-              <Link to="/signup" className="btn btn-primary" style={{ padding: "5px 15px" }}>Sign Up</Link>
+              <Link to="/login" className="btn btn-secondary">Login</Link>
+              <Link to="/signup" className="btn btn-primary">Sign Up</Link>
             </div>
           )}
         </div>
