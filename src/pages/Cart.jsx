@@ -10,6 +10,7 @@ export default function Cart() {
   const navigate = useNavigate();
 
   const totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  const hasOwnItems = auth.currentUser && cart.some(item => item.userEmail === auth.currentUser.email);
 
   const handleCheckout = async () => {
     if (!auth.currentUser) {
@@ -22,6 +23,12 @@ export default function Cart() {
 
     setLoading(true);
     try {
+      // 1. Check if user is trying to buy their own items
+      const ownItems = cart.filter(item => item.userEmail === auth.currentUser.email);
+      if (ownItems.length > 0) {
+        throw new Error(`You cannot purchase your own listings (${ownItems.map(i => i.title).join(", ")}). Please remove them from your cart.`);
+      }
+
       for (const item of cart) {
         // Double check stock before processing
         const itemRef = doc(db, "listings", item.id);
@@ -79,13 +86,27 @@ export default function Cart() {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "30px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            {cart.map((item) => (
-              <div key={item.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{item.title}</h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ${item.price}</p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+            {cart.map((item) => {
+              const isOwnItem = auth.currentUser?.email === item.userEmail;
+              
+              return (
+                <div key={item.id} className="card" style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between", 
+                  alignItems: "center",
+                  border: isOwnItem ? "1px solid var(--danger-color)" : "1px solid var(--border-color)",
+                  position: "relative"
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{item.title}</h3>
+                    <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ${item.price}</p>
+                    {isOwnItem && (
+                      <p style={{ color: "var(--danger-color)", fontSize: "0.8rem", fontWeight: "bold", marginTop: "5px" }}>
+                        ⚠️ You cannot buy your own item
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                   <div style={{ 
                     display: "flex", 
                     alignItems: "center",
@@ -163,7 +184,8 @@ export default function Cart() {
                   </p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="card" style={{ height: "fit-content" }}>
@@ -180,12 +202,17 @@ export default function Cart() {
             </div>
             <button 
               onClick={handleCheckout} 
-              disabled={loading}
+              disabled={loading || hasOwnItems}
               className="btn btn-primary" 
               style={{ width: "100%", padding: "12px" }}
             >
-              {loading ? "Processing..." : "Confirm Purchase"}
+              {loading ? "Processing..." : hasOwnItems ? "Remove Own Items to Continue" : "Confirm Purchase"}
             </button>
+            {hasOwnItems && (
+              <p style={{ color: "var(--danger-color)", fontSize: "0.85rem", textAlign: "center", marginTop: "10px" }}>
+                You have items in your cart that belong to you.
+              </p>
+            )}
             <button 
               onClick={() => navigate("/listings")}
               className="btn btn-secondary" 

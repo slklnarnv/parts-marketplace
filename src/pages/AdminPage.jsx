@@ -3,11 +3,13 @@ import { db, auth } from "../firebase";
 import {
   collection,
   getDocs,
+  getDoc,
   deleteDoc,
   doc,
   updateDoc,
   query,
   orderBy,
+  arrayUnion,
 } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
 
@@ -16,9 +18,25 @@ export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]); // New state for the ledger
   const [loading, setLoading] = useState(true);
+  const [lastCleared, setLastCleared] = useState(null);
+  const [hiddenIds, setHiddenIds] = useState([]);
 
   const fetchData = async () => {
     try {
+      let currentLastCleared = null;
+      let currentHiddenIds = [];
+      // Fetch admin's metadata (last cleared timestamp + hidden IDs)
+      if (auth.currentUser) {
+        const adminDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+        if (adminDoc.exists()) {
+          const data = adminDoc.data();
+          currentLastCleared = data.lastClearedLedger?.toDate() || null;
+          currentHiddenIds = data.hiddenTransactionIds || [];
+          setLastCleared(currentLastCleared);
+          setHiddenIds(currentHiddenIds);
+        }
+      }
+
       // Fetch listings
       const listingsSnapshot = await getDocs(collection(db, "listings"));
       setListings(
@@ -29,15 +47,26 @@ export default function AdminPage() {
       const usersSnapshot = await getDocs(collection(db, "users"));
       setUsers(usersSnapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
 
-      // Fetch Transaction Ledger (New)
+      // Fetch Transaction Ledger
       const transQuery = query(
         collection(db, "transactions"),
         orderBy("timestamp", "desc")
       );
       const transSnapshot = await getDocs(transQuery);
-      setTransactions(
-        transSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
-      );
+      const allTransactions = transSnapshot.docs.map((d) => ({ 
+        id: d.id, 
+        ...d.data(),
+        timestampDate: d.data().timestamp?.toDate()
+      }));
+
+      // Filter: only show transactions newer than lastCleared AND not individually hidden
+      const filtered = allTransactions.filter(t => {
+        const isOld = currentLastCleared && t.timestampDate <= currentLastCleared;
+        const isHidden = currentHiddenIds.includes(t.id);
+        return !isOld && !isHidden;
+      });
+
+      setTransactions(filtered);
     } catch (err) {
       console.error("Error fetching admin data:", err);
     } finally {
@@ -97,16 +126,34 @@ export default function AdminPage() {
   };
 
   const handleClearTransactions = async () => {
-    if (window.confirm("Are you sure you want to clear ALL transaction logs? This cannot be undone.")) {
+    if (window.confirm("This will hide all current transaction logs from your view, but they will remain in user histories. Proceed?")) {
       try {
-        const snapshot = await getDocs(collection(db, "transactions"));
-        const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, "transactions", d.id)));
-        await Promise.all(deletePromises);
+        const now = new Date();
+        // Update admin's own document with the last cleared timestamp
+        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+          lastClearedLedger: now,
+          hiddenTransactionIds: [] // Reset hidden list since we've cleared everything anyway
+        });
+        
+        setLastCleared(now);
+        setHiddenIds([]);
         setTransactions([]);
-        alert("Transaction log cleared!");
+        alert("Transaction log cleared from view!");
       } catch (err) {
-        alert("Failed to clear transactions: " + err.message);
+        alert("Failed to clear log: " + err.message);
       }
+    }
+  };
+
+  const handleHideSingleTransaction = async (transactionId) => {
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        hiddenTransactionIds: arrayUnion(transactionId)
+      });
+      setTransactions(prev => prev.filter(t => t.id !== transactionId));
+      setHiddenIds(prev => [...prev, transactionId]);
+    } catch (err) {
+      alert("Failed to hide transaction: " + err.message);
     }
   };
 
@@ -142,12 +189,13 @@ export default function AdminPage() {
               <th style={{ padding: "12px" }}>Seller</th>
               <th style={{ padding: "12px" }}>Price</th>
               <th style={{ padding: "12px" }}>Total</th>
+              <th style={{ padding: "12px" }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {transactions.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No transactions recorded yet.</td>
+                <td colSpan="8" style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No transactions recorded yet.</td>
               </tr>
             ) : (
               transactions.map((t) => (
@@ -160,6 +208,16 @@ export default function AdminPage() {
                   <td style={{ padding: "12px" }}>${t.priceAtPurchase}</td>
                   <td style={{ padding: "12px", fontWeight: "bold" }}>
                     ${t.totalPrice || (t.priceAtPurchase * (t.quantity || 1))}
+                  </td>
+                  <td style={{ padding: "12px" }}>
+                    <button 
+                      onClick={() => handleHideSingleTransaction(t.id)}
+                      className="btn btn-outline"
+                      style={{ padding: "2px 8px", fontSize: "11px", color: "var(--text-muted)" }}
+                      title="Hide from ledger"
+                    >
+                      Hide
+                    </button>
                   </td>
                 </tr>
               ))
