@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // Import signOut here
 import { auth } from "../firebase";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
@@ -51,32 +51,45 @@ export default function Login() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <br />
-        <br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <br />
-        <br />
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}{" "}
-          {/* Display loading text while logging in */}
-        </button>
-      </form>
-      {error && <div style={{ color: "red", marginTop: "10px" }}>{error}</div>}{" "}
-      {/* Show error message */}
+    <div className="container" style={{ padding: "80px 20px", display: "flex", justifyContent: "center" }}>
+      <div className="card" style={{ width: "100%", maxWidth: "400px" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "30px" }}>Welcome Back</h2>
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: "5px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)" }}>Email Address</label>
+          </div>
+          <input
+            type="email"
+            placeholder="email@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-field"
+            required
+          />
+          <div style={{ marginBottom: "5px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)" }}>Password</label>
+          </div>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-field"
+            required
+          />
+          <button type="submit" className="btn btn-primary" style={{ width: "100%", marginTop: "10px" }} disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+        {error && (
+          <div style={{ color: "var(--danger-color)", marginTop: "20px", textAlign: "center", fontSize: "14px", padding: "10px", backgroundColor: "#fee2e2", borderRadius: "6px" }}>
+            {error}
+          </div>
+        )}
+        <div style={{ marginTop: "30px", textAlign: "center", fontSize: "14px", color: "var(--text-muted)" }}>
+          Don't have an account? <Link to="/signup" style={{ color: "var(--primary-color)", textDecoration: "none", fontWeight: "bold" }}>Sign Up</Link>
+        </div>
+      </div>
     </div>
   );
 }

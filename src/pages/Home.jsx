@@ -15,81 +15,54 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ padding: 40, textAlign: "center" }}>
-      <h1>🚢 Ship Parts Marketplace</h1>
-      <p style={{ fontSize: "1.2rem", color: "#555" }}>
-        The most reliable platform to buy and sell marine spare parts easily.
+    <div className="container" style={{ padding: "80px 20px", textAlign: "center" }}>
+      <h1 style={{ fontSize: "3rem", marginBottom: "20px" }}>🚢 Ship Parts Marketplace</h1>
+      <p style={{ fontSize: "1.25rem", color: "var(--text-muted)", maxWidth: "600px", margin: "0 auto 40px" }}>
+        The most reliable platform to buy and sell marine spare parts easily. 
+        Join thousands of professionals in the maritime industry.
       </p>
 
       <div
         style={{
-          marginTop: 30,
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "15px",
+          justifyContent: "center",
+          gap: "20px",
+          flexWrap: "wrap"
         }}
       >
-        <Link to="/listings">
-          <button
-            style={{
-              padding: "10px 20px",
-              fontSize: "16px",
-              cursor: "pointer",
-              width: "200px",
-            }}
-          >
-            View All Listings
-          </button>
+        <Link to="/listings" className="btn btn-primary" style={{ minWidth: "200px", fontSize: "1rem" }}>
+          View All Listings
         </Link>
 
-        {/* If logged in, show 'My Listings' and 'Add Part' */}
         {isLoggedIn ? (
           <>
-            <Link to="/my-listings">
-              <button
-                style={{
-                  padding: "10px 20px",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                  width: "200px",
-                }}
-              >
-                My Listings
-              </button>
+            <Link to="/my-listings" className="btn btn-secondary" style={{ minWidth: "200px", fontSize: "1rem" }}>
+              My Listings
             </Link>
-            <Link to="/add">
-              <button
-                style={{
-                  padding: "10px 20px",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                  width: "200px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                + Add a Part
-              </button>
+            <Link to="/add" className="btn btn-primary" style={{ minWidth: "200px", fontSize: "1rem", backgroundColor: "var(--success-color)" }}>
+              + Add a Part
             </Link>
           </>
         ) : (
-          /* Only show Login link if user is not logged in */
-          <Link to="/login">
-            <button
-              style={{
-                padding: "10px 20px",
-                fontSize: "16px",
-                cursor: "pointer",
-                width: "200px",
-              }}
-            >
-              Login to Start Selling
-            </button>
+          <Link to="/login" className="btn btn-secondary" style={{ minWidth: "200px", fontSize: "1rem" }}>
+            Login to Start Selling
           </Link>
         )}
+      </div>
+
+      <div className="grid" style={{ marginTop: "80px", textAlign: "left" }}>
+        <div className="card">
+          <h3>Wide Selection</h3>
+          <p>Find everything from engines to navigation equipment for any vessel type.</p>
+        </div>
+        <div className="card">
+          <h3>Secure Trades</h3>
+          <p>Verified sellers and transparent transaction history for peace of mind.</p>
+        </div>
+        <div className="card">
+          <h3>Global Reach</h3>
+          <p>Connect with buyers and sellers from major ports across the globe.</p>
+        </div>
       </div>
     </div>
   );

@@ -18,40 +18,52 @@ export default function Navbar() {
 
   if (loading) {
     return (
-      <nav style={{ padding: 10, borderBottom: "1px solid gray" }}>
-        Loading...
+      <nav className="navbar">
+        <div className="container navbar-content">
+          <div style={{ fontWeight: "bold", fontSize: "1.2rem", color: "var(--primary-color)" }}>
+            🚢 MarineParts
+          </div>
+          <div className="navbar-links" style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+            Connecting...
+          </div>
+        </div>
       </nav>
     );
   }
 
   return (
-    <nav style={{ padding: 10, borderBottom: "1px solid gray" }}>
-      <Link to="/">Home</Link> | <Link to="/listings">Listings</Link>
-      {user ? (
-        <>
-          {" "}
-          | <Link to="/add">Add Listing</Link> |{" "}
-          <Link to="/my-listings">My Listings</Link> |{" "}
-          <span style={{ marginLeft: 10 }}>👤 {user.email}</span>
-          <button onClick={handleLogout} style={{ marginLeft: 10 }}>
-            Logout
-          </button>
-          {/* Show Admin link only if the user role is admin */}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              style={{ marginLeft: 10, color: "blue", fontWeight: "bold" }}
-            >
-              Admin Dashboard
-            </Link>
+    <nav className="navbar">
+      <div className="container navbar-content">
+        <div style={{ fontWeight: "bold", fontSize: "1.2rem", color: "var(--primary-color)" }}>
+          <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>🚢 MarineParts</Link>
+        </div>
+        <div className="navbar-links">
+          <Link to="/">Home</Link>
+          <Link to="/listings">Listings</Link>
+          {user ? (
+            <>
+              <Link to="/add">Add Listing</Link>
+              <Link to="/my-listings">My Listings</Link>
+              {isAdmin && (
+                <Link to="/admin" style={{ color: "var(--primary-color)", fontWeight: "bold" }}>
+                  Admin
+                </Link>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "10px", paddingLeft: "10px", borderLeft: "1px solid var(--border-color)" }}>
+                <span style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>{user.email}</span>
+                <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "5px 12px" }}>
+                  Logout
+                </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Link to="/login" className="btn btn-secondary" style={{ padding: "5px 15px" }}>Login</Link>
+              <Link to="/signup" className="btn btn-primary" style={{ padding: "5px 15px" }}>Sign Up</Link>
+            </div>
           )}
-        </>
-      ) : (
-        <>
-          {" "}
-          | <Link to="/login">Login</Link> | <Link to="/signup">Sign Up</Link>
-        </>
-      )}
+        </div>
+      </div>
     </nav>
   );
 }

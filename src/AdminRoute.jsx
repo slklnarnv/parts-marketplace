@@ -5,7 +5,11 @@ const AdminRoute = ({ children }) => {
   const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Show loading state while checking auth and role
+    return (
+      <div className="container" style={{ padding: "100px 20px", textAlign: "center" }}>
+        <p style={{ color: "var(--text-muted)" }}>Checking permissions...</p>
+      </div>
+    );
   }
 
   if (!user || !isAdmin) {

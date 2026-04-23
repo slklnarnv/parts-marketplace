@@ -53,29 +53,52 @@ export default function MyListings() {
     }
   };
 
-  if (loading) return <div>Loading your listings...</div>;
+  if (loading) return <div className="container" style={{ padding: 20 }}>Loading your listings...</div>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Your Listings</h2>
-      {items.map((item) => (
-        <div
-          key={item.id}
-          style={{ border: "1px solid gray", margin: 10, padding: 10 }}
-        >
-          <h3>{item.title}</h3>
-          <p>
-            💰 Price: ${item.price} | 🛒 Stock: {item.count}
-          </p>
-          <button onClick={() => navigate(`/edit/${item.id}`)}>Edit</button>
-          <button
-            onClick={() => handleDelete(item.id)}
-            style={{ marginLeft: 10, color: "red" }}
-          >
-            Delete
-          </button>
+    <div className="container" style={{ padding: "40px 20px" }}>
+      <h2 style={{ marginBottom: "30px" }}>Your Listings</h2>
+      {items.length === 0 ? (
+        <p style={{ color: "var(--text-muted)" }}>You haven't posted any listings yet.</p>
+      ) : (
+        <div className="grid">
+          {items.map((item) => (
+            <div key={item.id} className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <h3 style={{ marginBottom: "15px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px" }}>
+                  {item.title}
+                </h3>
+                <div style={{ marginBottom: "20px" }}>
+                  <p style={{ margin: "8px 0" }}>
+                    <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>💰 Price:</span>
+                    <strong>${item.price}</strong>
+                  </p>
+                  <p style={{ margin: "8px 0" }}>
+                    <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>🛒 Stock:</span>
+                    {item.count} items
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button 
+                  onClick={() => navigate(`/edit/${item.id}`)} 
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="btn btn-danger"
+                  style={{ flex: 1 }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }

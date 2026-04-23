@@ -8,7 +8,8 @@ export default function AddListing() {
   const [location, setLocation] = useState("");
   const [count, setCount] = useState(1);
 
-  const handleAdd = async () => {
+  const handleAdd = async (e) => {
+    if (e) e.preventDefault();
     if (!auth.currentUser) {
       alert("Please login first");
       return;
@@ -47,40 +48,64 @@ export default function AddListing() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Add Ship Part</h2>
-      <input
-        placeholder="Part Name"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <br />
-      <br />
-      <input
-        placeholder="Price"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        type="number"
-      />
-      <br />
-      <br />
-      <input
-        placeholder="Location"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-      />
-      <br />
-      <br />
-      <input
-        placeholder="Count"
-        value={count}
-        onChange={(e) => setCount(Number(e.target.value))}
-        type="number"
-        min="1"
-      />
-      <br />
-      <br />
-      <button onClick={handleAdd}>Post Listing</button>
+    <div className="container" style={{ padding: "40px 20px" }}>
+      <div className="card" style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <h2 style={{ marginBottom: "30px" }}>Add Ship Part</h2>
+        <form onSubmit={handleAdd}>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Part Name</label>
+            <input
+              placeholder="e.g. Caterpillar 3512 Engine"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="input-field"
+              required
+            />
+          </div>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Price ($)</label>
+              <input
+                placeholder="0.00"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                type="number"
+                step="0.01"
+                className="input-field"
+                required
+              />
+            </div>
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Quantity</label>
+              <input
+                placeholder="1"
+                value={count}
+                onChange={(e) => setCount(Number(e.target.value))}
+                type="number"
+                min="1"
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Location</label>
+            <input
+              placeholder="e.g. Port of Singapore"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="input-field"
+              required
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
+            Post Listing
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -74,64 +74,63 @@ export default function Listings() {
     }
   };
 
-  if (loading) return <div>Loading listings...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) return <div className="container" style={{ padding: 20 }}>Loading listings...</div>;
+  if (error) return <div className="container" style={{ padding: 20, color: "var(--danger-color)" }}>{error}</div>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>All Ship Parts Listings</h2>
+    <div className="container" style={{ padding: "40px 20px" }}>
+      <h2 style={{ marginBottom: "30px" }}>All Ship Parts Listings</h2>
       {items.length === 0 ? (
-        <p>No listings available at the moment.</p>
+        <p style={{ color: "var(--text-muted)" }}>No listings available at the moment.</p>
       ) : (
-        items.map((item) => {
-          // Check if the current user is the owner of this specific listing
-          const isOwner = auth.currentUser?.email === item.userEmail;
+        <div className="grid">
+          {items.map((item) => {
+            const isOwner = auth.currentUser?.email === item.userEmail;
 
-          return (
-            <div
-              key={item.id}
-              style={{ border: "1px solid gray", margin: 10, padding: 10 }}
-            >
-              <h3>{item.title}</h3>
-              <p>💰 Price: ${item.price}</p>
-              <p>📍 Location: {item.location}</p>
-              <p>🛒 Available: {item.count} items</p>
+            return (
+              <div key={item.id} className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <h3 style={{ marginBottom: "15px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px" }}>
+                    {item.title}
+                  </h3>
+                  <div style={{ marginBottom: "20px" }}>
+                    <p style={{ margin: "8px 0" }}>
+                      <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>💰 Price:</span>
+                      <strong>${item.price}</strong>
+                    </p>
+                    <p style={{ margin: "8px 0" }}>
+                      <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>📍 Location:</span>
+                      {item.location}
+                    </p>
+                    <p style={{ margin: "8px 0" }}>
+                      <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>🛒 Stock:</span>
+                      {item.count} items
+                    </p>
+                  </div>
+                </div>
 
-              {isOwner ? (
-                /* Show Edit button if user is the owner */
-                <button
-                  onClick={() => navigate(`/edit/${item.id}`)}
-                  style={{
-                    backgroundColor: "green",
-                    color: "white",
-                    padding: "8px 16px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Edit My Listing
-                </button>
-              ) : (
-                /* Show Buy button if user is NOT the owner */
-                <button
-                  onClick={() => handleBuy(item)}
-                  disabled={item.count <= 0}
-                  style={{
-                    backgroundColor: item.count <= 0 ? "gray" : "blue",
-                    color: "white",
-                    padding: "8px 16px",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: item.count <= 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {item.count <= 0 ? "Out of Stock" : "Buy"}
-                </button>
-              )}
-            </div>
-          );
-        })
+                {isOwner ? (
+                  <button
+                    onClick={() => navigate(`/edit/${item.id}`)}
+                    className="btn btn-secondary"
+                    style={{ width: "100%" }}
+                  >
+                    Edit My Listing
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleBuy(item)}
+                    disabled={item.count <= 0}
+                    className={`btn ${item.count <= 0 ? "btn-secondary" : "btn-primary"}`}
+                    style={{ width: "100%" }}
+                  >
+                    {item.count <= 0 ? "Out of Stock" : "Buy Now"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
