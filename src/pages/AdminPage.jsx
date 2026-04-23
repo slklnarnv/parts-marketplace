@@ -105,7 +105,7 @@ export default function AdminPage() {
 
       {/* 1. Transaction Ledger Section (New) */}
       <section style={{ marginBottom: 40 }}>
-        <h2 style={{ color: "green" }}>📜 Transaction Ledger (Sales Log)</h2>
+        <h2 style={{ color: "green" }}>📜 Transaction Log</h2>
         <table
           border="1"
           cellPadding="10"

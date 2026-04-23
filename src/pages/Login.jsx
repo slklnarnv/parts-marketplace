@@ -11,7 +11,8 @@ export default function Login() {
   const [error, setError] = useState(""); // New error state
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
     setLoading(true); // Set loading to true when login starts
     setError(""); // Clear any previous errors
 
@@ -52,26 +53,28 @@ export default function Login() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Login</h2>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <br />
-      <br />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <br />
-      <br />
-      <button onClick={handleLogin} disabled={loading}>
-        {loading ? "Logging in..." : "Login"}{" "}
-        {/* Display loading text while logging in */}
-      </button>
+      <form onSubmit={handleLogin}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <br />
+        <br />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <br />
+        <br />
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}{" "}
+          {/* Display loading text while logging in */}
+        </button>
+      </form>
       {error && <div style={{ color: "red", marginTop: "10px" }}>{error}</div>}{" "}
       {/* Show error message */}
     </div>
