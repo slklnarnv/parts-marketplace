@@ -32,8 +32,8 @@ export default function SignUp() {
 
       alert("User created successfully");
 
-      // Step 4: Redirect to login page after successful sign-up
-      navigate("/login"); // Redirect to the login page after sign-up
+      // Step 4: Redirect to home page after successful sign-up
+      navigate("/"); // Redirect to the home page after sign-up
     } catch (e) {
       alert("Error: " + e.message); // Handle any errors that may occur
     }
