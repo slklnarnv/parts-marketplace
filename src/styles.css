@@ -92,7 +92,7 @@ body {
 .input-field:focus {
   outline: none;
   border-color: var(--primary-color);
-  ring: 2px solid var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .navbar {
