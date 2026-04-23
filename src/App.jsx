@@ -11,6 +11,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 import Navbar from "./Navbar";
 import Cart from "./pages/Cart";
+import OrderHistory from "./pages/OrderHistory";
 import { CartProvider } from "./CartContext";
 
 export default function App() {
@@ -32,6 +33,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <MyListings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute>
+              <OrderHistory />
             </ProtectedRoute>
           }
         />

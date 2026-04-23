@@ -62,6 +62,7 @@ export default function Navbar() {
             <>
               <Link to="/add">Add Listing</Link>
               <Link to="/my-listings">My Listings</Link>
+              <Link to="/orders">Order History</Link>
               {isAdmin && (
                 <Link to="/admin" style={{ color: "var(--primary-color)" }}>
                   Admin
