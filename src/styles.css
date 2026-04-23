@@ -104,6 +104,18 @@ body {
   z-index: 50;
 }
 
+/* Hide number input spinners (arrows) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
 .navbar-content {
   display: flex;
   justify-content: space-between;

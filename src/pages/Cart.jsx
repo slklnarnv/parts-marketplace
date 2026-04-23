@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 export default function Cart() {
-  const { cart, removeFromCart, addToCart, clearCart } = useCart();
+  const { cart, removeFromCart, addToCart, clearCart, updateQuantity } = useCart();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -86,20 +86,77 @@ export default function Cart() {
                   <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ${item.price}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                  <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--border-color)", borderRadius: "4px" }}>
-                    <button 
-                      onClick={() => removeFromCart(item.id)}
-                      style={{ padding: "5px 12px", border: "none", background: "none", cursor: "pointer" }}
-                    >
-                      −
-                    </button>
-                    <span style={{ padding: "0 10px", fontWeight: "bold" }}>{item.quantity}</span>
-                    <button 
-                      onClick={() => addToCart(item)}
-                      style={{ padding: "5px 12px", border: "none", background: "none", cursor: "pointer" }}
-                    >
-                      +
-                    </button>
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center",
+                    backgroundColor: "white",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "8px",
+                    overflow: "hidden"
+                  }}>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => updateQuantity(item, e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      style={{
+                        width: "50px",
+                        border: "none",
+                        background: "none",
+                        textAlign: "center",
+                        fontWeight: "600",
+                        fontSize: "0.95rem",
+                        padding: "8px 0",
+                        outline: "none",
+                        appearance: "textfield",
+                        MozAppearance: "textfield"
+                      }}
+                    />
+                    <div style={{ 
+                      display: "flex", 
+                      borderLeft: "1px solid var(--border-color)",
+                      backgroundColor: "var(--bg-color)"
+                    }}>
+                      <button 
+                        onClick={() => removeFromCart(item.id)}
+                        style={{ 
+                          padding: "8px 12px", 
+                          border: "none", 
+                          borderRight: "1px solid var(--border-color)",
+                          background: "none", 
+                          cursor: "pointer",
+                          color: "var(--text-main)",
+                          fontSize: "1.2rem",
+                          display: "flex",
+                          alignItems: "center",
+                          transition: "background 0.2s"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--border-color)"}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        −
+                      </button>
+                      <button 
+                        onClick={() => addToCart(item)}
+                        disabled={item.quantity >= item.count}
+                        style={{ 
+                          padding: "8px 12px", 
+                          border: "none", 
+                          background: "none", 
+                          cursor: "pointer",
+                          color: "var(--text-main)",
+                          fontSize: "1.2rem",
+                          opacity: item.quantity >= item.count ? 0.5 : 1,
+                          display: "flex",
+                          alignItems: "center",
+                          transition: "background 0.2s"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--border-color)"}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <p style={{ fontWeight: "bold", width: "80px", textAlign: "right" }}>
                     ${(item.price * item.quantity).toFixed(2)}
