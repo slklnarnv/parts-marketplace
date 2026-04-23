@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import { db, auth } from "../firebase";
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  addDoc,
-} from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom"; // Added for navigation
+import { useCart } from "../CartContext";
 
 export default function Listings() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addToCart, removeFromCart, getItemQuantity } = useCart();
   const navigate = useNavigate(); // Initialize navigation hook
 
   const fetchListings = async () => {
@@ -34,45 +30,6 @@ export default function Listings() {
   useEffect(() => {
     fetchListings();
   }, []);
-
-  const handleBuy = async (item) => {
-    // 1. Check if user is logged in
-    if (!auth.currentUser) {
-      alert("You must be logged in to buy ship parts!");
-      return;
-    }
-
-    // 2. Check if item is in stock
-    if (item.count <= 0) {
-      alert("Sorry, this item is out of stock.");
-      return;
-    }
-
-    const itemRef = doc(db, "listings", item.id);
-
-    try {
-      // 3. Update the stock count in the listings collection
-      await updateDoc(itemRef, {
-        count: item.count - 1,
-      });
-
-      // 4. Create a transaction record in the 'transactions' ledger
-      await addDoc(collection(db, "transactions"), {
-        itemId: item.id,
-        itemTitle: item.title,
-        buyerEmail: auth.currentUser.email,
-        priceAtPurchase: item.price,
-        sellerEmail: item.userEmail || "Unknown",
-        timestamp: new Date(),
-      });
-
-      alert("Purchase successful! Transaction recorded in ledger.");
-      fetchListings();
-    } catch (err) {
-      console.error("Error processing purchase: ", err);
-      alert("Error completing purchase.");
-    }
-  };
 
   if (loading) return <div className="container" style={{ padding: 20 }}>Loading listings...</div>;
   if (error) return <div className="container" style={{ padding: 20, color: "var(--danger-color)" }}>{error}</div>;
@@ -118,14 +75,68 @@ export default function Listings() {
                     Edit My Listing
                   </button>
                 ) : (
-                  <button
-                    onClick={() => handleBuy(item)}
-                    disabled={item.count <= 0}
-                    className={`btn ${item.count <= 0 ? "btn-secondary" : "btn-primary"}`}
-                    style={{ width: "100%" }}
-                  >
-                    {item.count <= 0 ? "Out of Stock" : "Buy Now"}
-                  </button>
+                  <div style={{ width: "100%" }}>
+                    {getItemQuantity(item.id) > 0 ? (
+                      <div className="btn" style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "space-between",
+                        padding: "0 15px",
+                        backgroundColor: "var(--primary-color)",
+                        color: "white",
+                        cursor: "default"
+                      }}>
+                        <button 
+                          onClick={() => removeFromCart(item.id)}
+                          style={{ background: "none", border: "none", color: "white", fontSize: "1.2rem", cursor: "pointer", padding: "10px" }}
+                        >
+                          −
+                        </button>
+                        <span style={{ fontWeight: "bold" }}>{getItemQuantity(item.id)}</span>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <button 
+                            onClick={() => addToCart(item)}
+                            disabled={getItemQuantity(item.id) >= item.count}
+                            style={{ background: "none", border: "none", color: "white", fontSize: "1.2rem", cursor: "pointer", padding: "10px" }}
+                          >
+                            +
+                          </button>
+                          <button 
+                            onClick={() => navigate("/cart")}
+                            style={{ 
+                              background: "rgba(255,255,255,0.15)", 
+                              border: "none", 
+                              color: "white", 
+                              cursor: "pointer", 
+                              padding: "10px 12px", 
+                              marginLeft: "8px", 
+                              borderRadius: "4px",
+                              display: "flex",
+                              alignItems: "center",
+                              transition: "background 0.2s"
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.25)"}
+                            onMouseOut={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                            title="Go to Cart"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+                              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => addToCart(item)}
+                        disabled={item.count <= 0}
+                        className={`btn ${item.count <= 0 ? "btn-secondary" : "btn-primary"}`}
+                        style={{ width: "100%" }}
+                      >
+                        {item.count <= 0 ? "Out of Stock" : "Buy Now"}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             );

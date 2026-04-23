@@ -137,24 +137,30 @@ export default function AdminPage() {
             <tr style={{ borderBottom: "2px solid var(--border-color)" }}>
               <th style={{ padding: "12px" }}>Date</th>
               <th style={{ padding: "12px" }}>Item</th>
+              <th style={{ padding: "12px" }}>Qty</th>
               <th style={{ padding: "12px" }}>Buyer</th>
               <th style={{ padding: "12px" }}>Seller</th>
-              <th style={{ padding: "12px" }}>Amount</th>
+              <th style={{ padding: "12px" }}>Price</th>
+              <th style={{ padding: "12px" }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {transactions.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No transactions recorded yet.</td>
+                <td colSpan="7" style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No transactions recorded yet.</td>
               </tr>
             ) : (
               transactions.map((t) => (
                 <tr key={t.id} style={{ borderBottom: "1px solid var(--border-color)" }}>
                   <td style={{ padding: "12px", fontSize: "14px" }}>{t.timestamp?.toDate().toLocaleString()}</td>
                   <td style={{ padding: "12px", fontWeight: "500" }}>{t.itemTitle}</td>
+                  <td style={{ padding: "12px" }}>{t.quantity || 1}</td>
                   <td style={{ padding: "12px", fontSize: "14px" }}>{t.buyerEmail}</td>
                   <td style={{ padding: "12px", fontSize: "14px" }}>{t.sellerEmail}</td>
-                  <td style={{ padding: "12px", fontWeight: "bold" }}>${t.priceAtPurchase}</td>
+                  <td style={{ padding: "12px" }}>${t.priceAtPurchase}</td>
+                  <td style={{ padding: "12px", fontWeight: "bold" }}>
+                    ${t.totalPrice || (t.priceAtPurchase * (t.quantity || 1))}
+                  </td>
                 </tr>
               ))
             )}

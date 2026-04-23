@@ -10,19 +10,23 @@ import EditListing from "./pages/EditListing";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 import Navbar from "./Navbar";
+import Cart from "./pages/Cart";
+import { CartProvider } from "./CartContext";
 
 export default function App() {
   return (
-    <div>
-      <Navbar />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/listings" element={<Listings />} />
+    <CartProvider>
+      <div>
+        <Navbar />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/listings" element={<Listings />} />
+          <Route path="/cart" element={<Cart />} />
 
-        {/* Protected User Routes (Requires Login) */}
+          {/* Protected User Routes (Requires Login) */}
         <Route
           path="/my-listings"
           element={
@@ -59,5 +63,6 @@ export default function App() {
         />
       </Routes>
     </div>
+    </CartProvider>
   );
 }

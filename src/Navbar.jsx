@@ -2,10 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
 import { useAuth } from "./useAuth"; // Importing the centralized auth hook
+import { useCart } from "./CartContext";
 
 export default function Navbar() {
   const { user, isAdmin, loading } = useAuth();
+  const { cart } = useCart();
   const navigate = useNavigate();
+
+  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const handleLogout = async () => {
     try {
@@ -40,6 +44,20 @@ export default function Navbar() {
         <div className="navbar-links">
           <Link to="/">Home</Link>
           <Link to="/listings">Listings</Link>
+          <Link to="/cart" style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            My Cart {cartCount > 0 && (
+              <span style={{ 
+                backgroundColor: "var(--primary-color)", 
+                color: "white", 
+                borderRadius: "50%", 
+                padding: "2px 8px", 
+                fontSize: "0.8rem",
+                marginLeft: "4px"
+              }}>
+                {cartCount}
+              </span>
+            )}
+          </Link>
           {user ? (
             <>
               <Link to="/add">Add Listing</Link>
