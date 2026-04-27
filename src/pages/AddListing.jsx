@@ -7,6 +7,25 @@ export default function AddListing() {
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [count, setCount] = useState(1);
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 500000) { // 500KB limit
+        alert("Image is too large. Please select an image smaller than 500KB.");
+        e.target.value = null;
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleAdd = async (e) => {
     if (e) e.preventDefault();
@@ -16,8 +35,8 @@ export default function AddListing() {
     }
 
     // Validation
-    if (!title || !price || !location) {
-      alert("Please fill in all fields.");
+    if (!title || !price || !location || !description) {
+      alert("Please fill in all fields (Title, Price, Location, Description).");
       return;
     }
 
@@ -27,12 +46,15 @@ export default function AddListing() {
       return;
     }
 
+    setUploading(true);
     try {
       await addDoc(collection(db, "listings"), {
         title,
         price: numericPrice,
         location,
         count: parseInt(count),
+        description,
+        image, // Base64 string
         userEmail: auth.currentUser.email,
         createdAt: new Date(),
       });
@@ -42,8 +64,12 @@ export default function AddListing() {
       setPrice("");
       setLocation("");
       setCount(1);
+      setDescription("");
+      setImage(null);
     } catch (error) {
       alert(error.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -101,8 +127,40 @@ export default function AddListing() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
-            Post Listing
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Description</label>
+            <textarea
+              placeholder="Provide detailed information about the part..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input-field"
+              style={{ minHeight: "100px", resize: "vertical" }}
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: "30px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Upload Image (Max 500KB)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              style={{ fontSize: "14px", color: "var(--text-main)" }}
+            />
+            {image && (
+              <div style={{ marginTop: "10px" }}>
+                <img src={image} alt="Preview" style={{ maxWidth: "100%", borderRadius: "8px", maxHeight: "200px", objectFit: "cover" }} />
+              </div>
+            )}
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ width: "100%", padding: "12px" }}
+            disabled={uploading}
+          >
+            {uploading ? "Adding Listing..." : "Add Listing"}
           </button>
         </form>
       </div>

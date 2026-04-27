@@ -13,12 +13,14 @@ import Navbar from "./Navbar";
 import Cart from "./pages/Cart";
 import OrderHistory from "./pages/OrderHistory";
 import { CartProvider } from "./CartContext";
+import ThemeToggle from "./ThemeToggle";
 
 export default function App() {
   return (
     <CartProvider>
       <div>
         <Navbar />
+        <ThemeToggle />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />

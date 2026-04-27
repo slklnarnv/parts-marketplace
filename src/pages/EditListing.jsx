@@ -10,7 +10,10 @@ export default function EditListing() {
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [count, setCount] = useState(1);
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -26,25 +29,48 @@ export default function EditListing() {
         setPrice(data.price);
         setLocation(data.location);
         setCount(data.count);
+        setDescription(data.description || "");
+        setImage(data.image || null);
       }
       setLoading(false);
     };
     fetchListing();
   }, [id, navigate]);
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 500000) { // 500KB limit
+        alert("Image is too large. Please select an image smaller than 500KB.");
+        e.target.value = null;
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleUpdate = async (e) => {
     if (e) e.preventDefault();
+    setUpdating(true);
     try {
       await updateDoc(doc(db, "listings", id), {
         title,
         price: parseFloat(price),
         location,
         count: parseInt(count),
+        description,
+        image,
       });
       alert("Updated!");
       navigate("/my-listings");
     } catch (err) {
       alert("Update failed.");
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -100,14 +126,41 @@ export default function EditListing() {
             />
           </div>
 
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>
-              Save Changes
-            </button>
-            <button type="button" onClick={() => navigate("/my-listings")} className="btn btn-secondary" style={{ flex: 1 }}>
-              Cancel
-            </button>
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Description</label>
+            <textarea
+              placeholder="Provide detailed information about the part..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="input-field"
+              style={{ minHeight: "100px", resize: "vertical" }}
+              required
+            />
           </div>
+
+          <div style={{ marginBottom: "30px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Change Image (Max 500KB)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              style={{ fontSize: "14px", color: "var(--text-main)" }}
+            />
+            {image && (
+              <div style={{ marginTop: "10px" }}>
+                <img src={image} alt="Preview" style={{ maxWidth: "100%", borderRadius: "8px", maxHeight: "200px", objectFit: "cover" }} />
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: "100%", padding: "12px" }}
+            disabled={updating}
+          >
+            {updating ? "Updating..." : "Update Listing"}
+          </button>
         </form>
       </div>
     </div>

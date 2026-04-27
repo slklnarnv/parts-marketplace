@@ -109,18 +109,25 @@ export default function MyListings() {
       ) : (
         <div className="grid">
           {items.map((item) => {
-            const itemStats = salesData[item.id] || { sold: 0, revenue: 0 };
+            const stats = salesData[item.id] || { sold: 0, revenue: 0 };
             
             return (
-              <div key={item.id} className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div key={item.id} className="card" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                {item.image && (
+                  <div style={{ borderRadius: "8px", overflow: "hidden", height: "150px" }}>
+                    <img src={item.image} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                )}
                 <div>
-                  <h3 style={{ marginBottom: "15px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px" }}>
-                    {item.title}
-                  </h3>
-                  <div style={{ marginBottom: "20px" }}>
+                  <h3 style={{ margin: "0 0 15px 0" }}>{item.title}</h3>
+                  <div style={{ marginBottom: "0px" }}>
                     <p style={{ margin: "8px 0" }}>
                       <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>💰 Price:</span>
                       <strong>${item.price}</strong>
+                    </p>
+                    <p style={{ margin: "8px 0" }}>
+                      <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>📍 Location:</span>
+                      {item.location}
                     </p>
                     <p style={{ margin: "8px 0" }}>
                       <span style={{ color: "var(--text-muted)", width: "100px", display: "inline-block" }}>🛒 Stock:</span>
@@ -138,11 +145,11 @@ export default function MyListings() {
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
                         <span>Sold:</span>
-                        <span style={{ fontWeight: "bold" }}>{itemStats.sold}</span>
+                        <span style={{ fontWeight: "bold" }}>{stats.sold}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginTop: "4px" }}>
                         <span>Revenue:</span>
-                        <span style={{ fontWeight: "bold", color: "var(--success-color)" }}>${itemStats.revenue.toFixed(2)}</span>
+                        <span style={{ fontWeight: "bold", color: "var(--success-color)" }}>${stats.revenue.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
