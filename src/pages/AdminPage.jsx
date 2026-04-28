@@ -158,11 +158,13 @@ export default function AdminPage() {
   };
 
   if (loading)
-    return <div className="container" style={{ padding: 20 }}>Loading Admin Dashboard...</div>;
+    return <div className="container" style={{ padding: 20 }}>Loading admin data...</div>;
 
   return (
     <div className="container" style={{ padding: "40px 20px" }}>
-      <h1 style={{ marginBottom: "40px" }}>🛠 Admin Dashboard</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+        <h2>Admin Dashboard</h2>
+      </div>
 
       {/* 1. Transaction Ledger Section */}
       <section className="card" style={{ marginBottom: 40, overflowX: "auto" }}>

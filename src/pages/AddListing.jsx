@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { db, auth } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
+import { uploadImageToCloudinary, getOptimizedUrl } from "../cloudinary";
 
 export default function AddListing() {
   const [title, setTitle] = useState("");
@@ -9,21 +10,32 @@ export default function AddListing() {
   const [count, setCount] = useState(1);
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 500000) { // 500KB limit
-        alert("Image is too large. Please select an image smaller than 500KB.");
+      if (file.size > 5000000) { // Increased to 5MB
+        alert("Image is too large. Please select an image smaller than 5MB.");
         e.target.value = null;
         return;
       }
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result);
+        setImage(reader.result); // For preview only
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImage(null);
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -48,13 +60,18 @@ export default function AddListing() {
 
     setUploading(true);
     try {
+      let imageUrl = image;
+      if (imageFile) {
+        imageUrl = await uploadImageToCloudinary(imageFile);
+      }
+
       await addDoc(collection(db, "listings"), {
         title,
         price: numericPrice,
         location,
         count: parseInt(count),
         description,
-        image, // Base64 string
+        image: imageUrl, // Now storing Cloudinary URL
         userEmail: auth.currentUser.email,
         createdAt: new Date(),
       });
@@ -65,7 +82,7 @@ export default function AddListing() {
       setLocation("");
       setCount(1);
       setDescription("");
-      setImage(null);
+      handleRemoveImage();
     } catch (error) {
       alert(error.message);
     } finally {
@@ -140,16 +157,49 @@ export default function AddListing() {
           </div>
 
           <div style={{ marginBottom: "30px" }}>
-            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Upload Image (Max 500KB)</label>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Upload Image (Max 5MB)</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
+              ref={fileInputRef}
               style={{ fontSize: "14px", color: "var(--text-main)" }}
             />
             {image && (
-              <div style={{ marginTop: "10px" }}>
-                <img src={image} alt="Preview" style={{ maxWidth: "100%", borderRadius: "8px", maxHeight: "200px", objectFit: "cover" }} />
+              <div style={{ marginTop: "15px", position: "relative", display: "inline-block" }}>
+                <img
+                  src={getOptimizedUrl(image, 600)}
+                  alt="Preview"
+                  style={{ maxWidth: "100%", borderRadius: "8px", maxHeight: "200px", objectFit: "cover", display: "block" }}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  style={{ 
+                    position: "absolute", 
+                    top: "-10px", 
+                    right: "-10px", 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    backgroundColor: "var(--danger-color)", 
+                    color: "white", 
+                    border: "2px solid white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    lineHeight: "0",
+                    padding: "0",
+                    paddingBottom: "2px",
+                  }}
+                  title="Remove image"
+                >
+                  &times;
+                </button>
               </div>
             )}
           </div>

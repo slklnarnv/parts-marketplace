@@ -3,6 +3,7 @@ import { db, auth } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom"; // Added for navigation
 import { useCart } from "../CartContext";
+import { getOptimizedUrl } from "../cloudinary";
 
 export default function Listings() {
   const [items, setItems] = useState([]);
@@ -61,7 +62,7 @@ export default function Listings() {
                   {item.image && (
                     <div style={{ marginBottom: "15px", borderRadius: "8px", overflow: "hidden", height: "200px" }}>
                       <img 
-                        src={item.image} 
+                        src={getOptimizedUrl(item.image, 600)} 
                         alt={item.title} 
                         style={{ width: "100%", height: "100%", objectFit: "cover" }} 
                       />
@@ -146,7 +147,8 @@ export default function Listings() {
                               padding: "8px 0",
                               outline: "none",
                               appearance: "textfield",
-                              MozAppearance: "textfield"
+                              MozAppearance: "textfield",
+                              color: "var(--text-main)"
                             }}
                           />
                           <div style={{ 
@@ -239,15 +241,15 @@ export default function Listings() {
 
       {selectedItem && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedItem(null)}>×</button>
+          <div className="modal-content card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px", width: "90%" }}>
+            <button className="modal-close" onClick={() => setSelectedItem(null)}>&times;</button>
             
             {selectedItem.image && (
-              <div style={{ marginBottom: "25px", borderRadius: "12px", overflow: "hidden", maxHeight: "400px" }}>
+              <div style={{ marginBottom: "20px", borderRadius: "12px", overflow: "hidden", maxHeight: "400px" }}>
                 <img 
-                  src={selectedItem.image} 
+                  src={getOptimizedUrl(selectedItem.image, 1200)} 
                   alt={selectedItem.title} 
-                  style={{ width: "100%", height: "100%", objectFit: "contain", backgroundColor: "#f0f0f0" }} 
+                  style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} 
                 />
               </div>
             )}

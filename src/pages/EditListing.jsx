@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { db, auth } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { uploadImageToCloudinary, getOptimizedUrl } from "../cloudinary";
 
 export default function EditListing() {
   const { id } = useParams();
@@ -12,8 +13,10 @@ export default function EditListing() {
   const [count, setCount] = useState(1);
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -40,16 +43,25 @@ export default function EditListing() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 500000) { // 500KB limit
-        alert("Image is too large. Please select an image smaller than 500KB.");
+      if (file.size > 5000000) { // Increased to 5MB
+        alert("Image is too large. Please select an image smaller than 5MB.");
         e.target.value = null;
         return;
       }
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result);
+        setImage(reader.result); // For preview
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImage(null);
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -57,13 +69,18 @@ export default function EditListing() {
     if (e) e.preventDefault();
     setUpdating(true);
     try {
+      let imageUrl = image;
+      if (imageFile) {
+        imageUrl = await uploadImageToCloudinary(imageFile);
+      }
+
       await updateDoc(doc(db, "listings", id), {
         title,
         price: parseFloat(price),
         location,
         count: parseInt(count),
         description,
-        image,
+        image: imageUrl,
       });
       alert("Updated!");
       navigate("/my-listings");
@@ -139,16 +156,49 @@ export default function EditListing() {
           </div>
 
           <div style={{ marginBottom: "30px" }}>
-            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Change Image (Max 500KB)</label>
+            <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Change Image (Max 5MB)</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
+              ref={fileInputRef}
               style={{ fontSize: "14px", color: "var(--text-main)" }}
             />
             {image && (
-              <div style={{ marginTop: "10px" }}>
-                <img src={image} alt="Preview" style={{ maxWidth: "100%", borderRadius: "8px", maxHeight: "200px", objectFit: "cover" }} />
+              <div style={{ marginTop: "15px", position: "relative", display: "inline-block" }}>
+                <img
+                  src={getOptimizedUrl(image, 600)}
+                  alt="Preview"
+                  style={{ maxWidth: "100%", borderRadius: "8px", maxHeight: "200px", objectFit: "cover", display: "block" }}
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  style={{ 
+                    position: "absolute", 
+                    top: "-10px", 
+                    right: "-10px", 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    backgroundColor: "var(--danger-color)", 
+                    color: "white", 
+                    border: "2px solid white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    lineHeight: "0",
+                    padding: "0",
+                    paddingBottom: "2px",
+                  }}
+                  title="Remove image"
+                >
+                  &times;
+                </button>
               </div>
             )}
           </div>
