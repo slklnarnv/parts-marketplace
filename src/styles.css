@@ -55,6 +55,8 @@ body {
   box-shadow: var(--shadow);
   padding: 20px;
   transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, border-color 0.3s;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
 }
 
 .card:hover {
