@@ -1,3 +1,13 @@
+/* Toast animations */
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(80px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastSlideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(80px); }
+}
+
 :root {
   --primary-color: #2563eb;
   --primary-hover: #1d4ed8;
@@ -144,6 +154,8 @@ input[type=number] {
   display: flex;
   gap: 20px;
   align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .navbar-links a:not(.btn) {
@@ -160,6 +172,101 @@ input[type=number] {
 .navbar-links a.active:not(.btn) {
   color: var(--primary-color);
 }
+
+/* Desktop links — visible by default, hidden on mobile */
+.navbar-desktop {
+  display: flex;
+}
+
+/* Mobile right side (cart icon + hamburger) — hidden on desktop */
+.navbar-mobile-right {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hamburger button */
+.hamburger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-main);
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.hamburger-btn:hover {
+  background: var(--bg-color);
+}
+
+/* Mobile slide-down drawer */
+.mobile-menu {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  position: relative;
+  z-index: 49;
+  animation: slideDown 0.18s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mobile-menu-inner {
+  padding: 12px 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-main);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-color);
+  transition: color 0.2s;
+}
+.mobile-nav-link:last-of-type {
+  border-bottom: none;
+}
+.mobile-nav-link:hover {
+  color: var(--primary-color);
+}
+.mobile-cart-badge {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+.mobile-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 12px 0;
+}
+
+/* Switch between desktop & mobile layouts */
+@media (max-width: 1100px) {
+  .navbar-desktop {
+    display: none !important;
+  }
+  .navbar-mobile-right {
+    display: flex;
+  }
+}
+
+
 
 h1, h2, h3 {
   margin-top: 0;
@@ -269,3 +376,193 @@ h1, h2, h3 {
 .footer a:hover {
   text-decoration: underline;
 }
+
+/* =============================================
+   RESPONSIVE / MOBILE STYLES
+   ============================================= */
+
+/* Fluid container on small screens */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  /* Single-column grid on mobile */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Make cards slightly less padded */
+  .card {
+    padding: 16px;
+  }
+
+  /* Taller tap targets for buttons */
+  .btn {
+    padding: 10px 18px;
+    font-size: 15px;
+  }
+
+  /* Theme toggle — smaller and bottom-right so it doesn't clash with nav */
+  .theme-toggle-bubble {
+    bottom: 20px;
+    left: 16px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  /* Modals: full-width on mobile */
+  .modal-content {
+    width: 95%;
+    padding: 20px 16px;
+    max-height: 92vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 12px;
+  }
+
+  .btn {
+    font-size: 14px;
+  }
+}
+
+/* =============================================
+   CART PAGE — RESPONSIVE
+   ============================================= */
+
+/* Desktop: side-by-side items + order summary */
+.cart-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 30px;
+  align-items: start;
+}
+
+/* Cart item row: info on left, controls on right */
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  /* Stack items list above order summary */
+  .cart-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stack item info above price/qty controls */
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  /* Make the qty+price control row full-width on mobile */
+  .cart-item > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* =============================================
+   HOME PAGE — RESPONSIVE
+   ============================================= */
+
+@media (max-width: 600px) {
+  .home-hero h1 {
+    font-size: 1.9rem !important;
+  }
+
+  .home-hero p {
+    font-size: 1rem !important;
+  }
+}
+
+/* =============================================
+   MY LISTINGS PAGE — RESPONSIVE
+   ============================================= */
+
+@media (max-width: 768px) {
+  /* Header row: stack title above stat cards */
+  .my-listings-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px;
+  }
+
+  /* Card layout: go vertical, remove absolute buttons */
+  .my-listing-card {
+    flex-direction: column !important;
+    padding: 16px !important;
+    min-height: unset !important;
+  }
+
+  /* Image: full width */
+  .my-listing-card .listing-image {
+    width: 100% !important;
+    height: 200px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* Content: remove right padding reserved for buttons */
+  .my-listing-card .listing-content {
+    padding-right: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Action buttons: go inline row */
+  .my-listing-actions {
+    position: static !important;
+    flex-direction: row !important;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .my-listing-actions .btn {
+    flex: 1;
+  }
+
+  /* Stat cards: wrap */
+  .my-listings-stats {
+    flex-wrap: wrap;
+  }
+}
+
+/* =============================================
+   ADD / EDIT LISTING — RESPONSIVE
+   ============================================= */
+
+@media (max-width: 600px) {
+  .form-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =============================================
+   ORDER HISTORY — RESPONSIVE
+   ============================================= */
+
+@media (max-width: 600px) {
+  .order-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px;
+  }
+
+  .order-details-row {
+    flex-direction: column !important;
+    gap: 10px;
+  }
+
+  .order-price-col {
+    text-align: left !important;
+  }
+}
+

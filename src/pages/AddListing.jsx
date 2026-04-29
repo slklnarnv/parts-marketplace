@@ -2,8 +2,10 @@ import { useState, useRef } from "react";
 import { db, auth } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { uploadImageToCloudinary, getOptimizedUrl } from "../cloudinary";
+import { useToast } from "../ToastContext";
 
 export default function AddListing() {
+  const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
@@ -18,7 +20,7 @@ export default function AddListing() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5000000) { // Increased to 5MB
-        alert("Image is too large. Please select an image smaller than 5MB.");
+        toast.warning("Image is too large. Please select an image smaller than 5MB.");
         e.target.value = null;
         return;
       }
@@ -42,19 +44,19 @@ export default function AddListing() {
   const handleAdd = async (e) => {
     if (e) e.preventDefault();
     if (!auth.currentUser) {
-      alert("Please login first");
+      toast.warning("Please login first.");
       return;
     }
 
     // Validation
     if (!title || !price || !location || !description) {
-      alert("Please fill in all fields (Title, Price, Location, Description).");
+      toast.warning("Please fill in all fields (Title, Price, Location, Description).");
       return;
     }
 
     const numericPrice = parseFloat(price);
     if (isNaN(numericPrice) || numericPrice <= 0) {
-      alert("Please enter a valid price.");
+      toast.warning("Please enter a valid price.");
       return;
     }
 
@@ -76,7 +78,7 @@ export default function AddListing() {
         createdAt: new Date(),
       });
 
-      alert("Listing added!");
+      toast.success("Listing added!");
       setTitle("");
       setPrice("");
       setLocation("");
@@ -84,7 +86,7 @@ export default function AddListing() {
       setDescription("");
       handleRemoveImage();
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setUploading(false);
     }
@@ -106,7 +108,7 @@ export default function AddListing() {
             />
           </div>
           
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+          <div className="form-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div style={{ marginBottom: "15px" }}>
               <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Price ($)</label>
               <input

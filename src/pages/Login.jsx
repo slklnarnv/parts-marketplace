@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // Import signOut here
-import { auth } from "../firebase";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,7 +25,6 @@ export default function Login() {
       );
 
       // Step 2: Get the user data from Firestore to check their role
-      const db = getFirestore();
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
 
       if (userDoc.exists()) {

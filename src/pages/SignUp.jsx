@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import { getFirestore, setDoc, doc } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { setDoc, doc } from "firebase/firestore";
+import { useToast } from "../ToastContext";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user"); // Default role is 'user'
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSignUp = async (e) => {
     if (e) e.preventDefault();
@@ -24,18 +26,17 @@ export default function SignUp() {
       const user = userCredential.user;
 
       // Step 3: Set the role in Firestore
-      const db = getFirestore();
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         role: role, // Role can be 'user' or 'admin'
       });
 
-      alert("User created successfully");
+      toast.success("Account created successfully!");
 
       // Step 4: Redirect to home page after successful sign-up
       navigate("/"); // Redirect to the home page after sign-up
     } catch (e) {
-      alert("Error: " + e.message); // Handle any errors that may occur
+      toast.error("Error: " + e.message);
     }
   };
 

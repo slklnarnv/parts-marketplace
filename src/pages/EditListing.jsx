@@ -3,11 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { db, auth } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { uploadImageToCloudinary, getOptimizedUrl } from "../cloudinary";
+import { useToast } from "../ToastContext";
 
 export default function EditListing() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
+  const { toast } = useToast();
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [count, setCount] = useState(1);
@@ -24,7 +26,7 @@ export default function EditListing() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.userEmail !== auth.currentUser?.email) {
-          alert("Not authorized");
+          toast.error("Not authorized");
           navigate("/listings");
           return;
         }
@@ -44,7 +46,7 @@ export default function EditListing() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5000000) { // Increased to 5MB
-        alert("Image is too large. Please select an image smaller than 5MB.");
+        toast.warning("Image is too large. Please select an image smaller than 5MB.");
         e.target.value = null;
         return;
       }
@@ -82,10 +84,10 @@ export default function EditListing() {
         description,
         image: imageUrl,
       });
-      alert("Updated!");
+      toast.success("Listing updated!");
       navigate("/my-listings");
     } catch (err) {
-      alert("Update failed.");
+      toast.error("Update failed.");
     } finally {
       setUpdating(false);
     }
@@ -108,7 +110,7 @@ export default function EditListing() {
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+          <div className="form-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div style={{ marginBottom: "15px" }}>
               <label style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", display: "block", marginBottom: "5px" }}>Price ($)</label>
               <input

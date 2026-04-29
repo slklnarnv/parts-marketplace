@@ -15,7 +15,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="container" style={{ padding: "80px 20px", textAlign: "center" }}>
+    <div className="container home-hero" style={{ padding: "80px 20px", textAlign: "center" }}>
       <h1 style={{ fontSize: "3rem", marginBottom: "20px" }}>🚢 Ship Parts Marketplace</h1>
       <p style={{ fontSize: "1.25rem", color: "var(--text-muted)", maxWidth: "600px", margin: "0 auto 40px" }}>
         The most reliable platform to buy and sell marine spare parts easily. 
@@ -26,25 +26,25 @@ export default function Home() {
         style={{
           display: "flex",
           justifyContent: "center",
-          gap: "20px",
+          gap: "16px",
           flexWrap: "wrap"
         }}
       >
-        <Link to="/listings" className="btn btn-primary" style={{ minWidth: "200px", fontSize: "1rem" }}>
+        <Link to="/listings" className="btn btn-primary" style={{ minWidth: "180px", fontSize: "1rem" }}>
           View All Listings
         </Link>
 
         {isLoggedIn ? (
           <>
-            <Link to="/my-listings" className="btn btn-secondary" style={{ minWidth: "200px", fontSize: "1rem" }}>
+            <Link to="/my-listings" className="btn btn-secondary" style={{ minWidth: "180px", fontSize: "1rem" }}>
               My Listings
             </Link>
-            <Link to="/add" className="btn btn-primary" style={{ minWidth: "200px", fontSize: "1rem", backgroundColor: "var(--success-color)" }}>
+            <Link to="/add" className="btn btn-primary" style={{ minWidth: "180px", fontSize: "1rem", backgroundColor: "var(--success-color)" }}>
               + Add a Part
             </Link>
           </>
         ) : (
-          <Link to="/login" className="btn btn-secondary" style={{ minWidth: "200px", fontSize: "1rem" }}>
+          <Link to="/login" className="btn btn-secondary" style={{ minWidth: "180px", fontSize: "1rem" }}>
             Login to Start Selling
           </Link>
         )}
@@ -67,3 +67,4 @@ export default function Home() {
     </div>
   );
 }
+
