@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
-import {
-  collection,
-  getDocs,
-  getDoc,
-  deleteDoc,
-  doc,
-  updateDoc,
-  query,
-  orderBy,
-  arrayUnion,
-} from "firebase/firestore";
+import { auth } from "../firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { getListings, deleteListing } from "../services/listingService";
+import { getAllTransactions } from "../services/transactionService";
+import { 
+  getUserProfile, 
+  getAllUsers, 
+  updateUserRole, 
+  deleteUserProfile, 
+  updateAdminPreferences, 
+  hideTransactionForAdmin 
+} from "../services/userService";
 
 export default function AdminPage() {
   const [listings, setListings] = useState([]);
@@ -27,36 +26,28 @@ export default function AdminPage() {
       let currentHiddenIds = [];
       // Fetch admin's metadata (last cleared timestamp + hidden IDs)
       if (auth.currentUser) {
-        const adminDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
-        if (adminDoc.exists()) {
-          const data = adminDoc.data();
-          currentLastCleared = data.lastClearedLedger?.toDate() || null;
-          currentHiddenIds = data.hiddenTransactionIds || [];
+        const adminData = await getUserProfile(auth.currentUser.uid);
+        if (adminData) {
+          currentLastCleared = adminData.lastClearedLedger?.toDate() || null;
+          currentHiddenIds = adminData.hiddenTransactionIds || [];
           setLastCleared(currentLastCleared);
           setHiddenIds(currentHiddenIds);
         }
       }
 
       // Fetch listings
-      const listingsSnapshot = await getDocs(collection(db, "listings"));
-      setListings(
-        listingsSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
-      );
+      const listingsData = await getListings();
+      setListings(listingsData);
 
       // Fetch users
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      setUsers(usersSnapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const usersData = await getAllUsers();
+      setUsers(usersData);
 
       // Fetch Transaction Ledger
-      const transQuery = query(
-        collection(db, "transactions"),
-        orderBy("timestamp", "desc")
-      );
-      const transSnapshot = await getDocs(transQuery);
-      const allTransactions = transSnapshot.docs.map((d) => ({ 
-        id: d.id, 
-        ...d.data(),
-        timestampDate: d.data().timestamp?.toDate()
+      const transData = await getAllTransactions();
+      const allTransactions = transData.map((d) => ({ 
+        ...d,
+        timestampDate: d.timestamp?.toDate()
       }));
 
       // Filter: only show transactions newer than lastCleared AND not individually hidden
@@ -81,7 +72,7 @@ export default function AdminPage() {
   const handleDeleteListing = async (listingId) => {
     if (window.confirm("Delete this listing forever?")) {
       try {
-        await deleteDoc(doc(db, "listings", listingId));
+        await deleteListing(listingId);
         setListings(listings.filter((l) => l.id !== listingId));
       } catch (err) {
         alert("Delete failed: " + err.message);
@@ -91,7 +82,7 @@ export default function AdminPage() {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      await updateDoc(doc(db, "users", userId), { role: newRole });
+      await updateUserRole(userId, newRole);
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );
@@ -108,7 +99,7 @@ export default function AdminPage() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Delete this user account?")) {
       try {
-        await deleteDoc(doc(db, "users", userId));
+        await deleteUserProfile(userId);
         setUsers(users.filter((u) => u.id !== userId));
       } catch (err) {
         alert("User deletion failed.");
@@ -130,7 +121,7 @@ export default function AdminPage() {
       try {
         const now = new Date();
         // Update admin's own document with the last cleared timestamp
-        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        await updateAdminPreferences(auth.currentUser.uid, {
           lastClearedLedger: now,
           hiddenTransactionIds: [] // Reset hidden list since we've cleared everything anyway
         });
@@ -147,9 +138,7 @@ export default function AdminPage() {
 
   const handleHideSingleTransaction = async (transactionId) => {
     try {
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
-        hiddenTransactionIds: arrayUnion(transactionId)
-      });
+      await hideTransactionForAdmin(auth.currentUser.uid, transactionId);
       setTransactions(prev => prev.filter(t => t.id !== transactionId));
       setHiddenIds(prev => [...prev, transactionId]);
     } catch (err) {

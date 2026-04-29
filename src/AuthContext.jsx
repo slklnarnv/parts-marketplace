@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { auth } from "./firebase";
+import { getUserProfile } from "./services/userService";
 
 const AuthContext = createContext();
 
@@ -16,11 +16,9 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
         try {
-          const userDocRef = doc(db, "users", authUser.uid);
-          const docSnap = await getDoc(userDocRef);
+          const userData = await getUserProfile(authUser.uid);
 
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
+          if (userData) {
             setUser(authUser);
             setIsAdmin(userData.role === "admin");
           } else {

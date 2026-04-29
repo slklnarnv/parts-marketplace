@@ -1,6 +1,6 @@
 import { useCart } from "../CartContext";
-import { auth, db } from "../firebase";
-import { collection, addDoc, doc, runTransaction } from "firebase/firestore";
+import { auth } from "../firebase";
+import { createTransaction } from "../services/transactionService";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "../ToastContext";
@@ -34,47 +34,7 @@ export default function Cart() {
         throw new Error(`You cannot purchase your own listings (${ownItems.map(i => i.title).join(", ")}). Please remove them from your cart.`);
       }
 
-      // Use Firestore transaction for atomic stock check + update
-      await runTransaction(db, async (transaction) => {
-        // Phase 1: Read all item stocks
-        const itemRefs = cart.map(item => doc(db, "listings", item.id));
-        const snapshots = await Promise.all(itemRefs.map(ref => transaction.get(ref)));
-
-        // Phase 2: Validate all stocks
-        snapshots.forEach((snap, index) => {
-          const item = cart[index];
-          if (!snap.exists()) {
-            throw new Error(`Item "${item.title}" no longer exists.`);
-          }
-          const currentStock = snap.data().count;
-          if (currentStock < item.quantity) {
-            throw new Error(`Not enough stock for "${item.title}". Only ${currentStock} left.`);
-          }
-        });
-
-        // Phase 3: Write all updates atomically
-        snapshots.forEach((snap, index) => {
-          const item = cart[index];
-          const currentStock = snap.data().count;
-          transaction.update(itemRefs[index], {
-            count: currentStock - item.quantity,
-          });
-        });
-      });
-
-      // Record transactions after successful stock update
-      for (const item of cart) {
-        await addDoc(collection(db, "transactions"), {
-          itemId: item.id,
-          itemTitle: item.title,
-          buyerEmail: auth.currentUser.email,
-          priceAtPurchase: item.price,
-          quantity: item.quantity,
-          totalPrice: item.price * item.quantity,
-          sellerEmail: item.userEmail || "Unknown",
-          timestamp: new Date(),
-        });
-      }
+      await createTransaction(cart, auth.currentUser.email);
 
       toast.success("Purchase successful! Your orders have been placed.");
       clearCart();

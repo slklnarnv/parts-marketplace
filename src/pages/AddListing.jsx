@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
-import { db, auth } from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { useState, useRef, useEffect } from "react";
+import { auth } from "../firebase";
+import { addListing } from "../services/listingService";
 import { uploadImageToCloudinary, getOptimizedUrl } from "../cloudinary";
 import { useToast } from "../ToastContext";
 
@@ -11,10 +11,19 @@ export default function AddListing() {
   const [location, setLocation] = useState("");
   const [count, setCount] = useState(1);
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null); // Preview URL
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Cleanup object URLs to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (image && image.startsWith("blob:")) {
+        URL.revokeObjectURL(image);
+      }
+    };
+  }, [image]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -25,15 +34,21 @@ export default function AddListing() {
         return;
       }
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result); // For preview only
-      };
-      reader.readAsDataURL(file);
+      
+      // Cleanup previous object URL
+      if (image && image.startsWith("blob:")) {
+        URL.revokeObjectURL(image);
+      }
+      
+      // Instant preview using object URL instead of FileReader
+      setImage(URL.createObjectURL(file));
     }
   };
 
   const handleRemoveImage = () => {
+    if (image && image.startsWith("blob:")) {
+      URL.revokeObjectURL(image);
+    }
     setImage(null);
     setImageFile(null);
     if (fileInputRef.current) {
@@ -62,20 +77,19 @@ export default function AddListing() {
 
     setUploading(true);
     try {
-      let imageUrl = image;
+      let imageUrl = null;
       if (imageFile) {
         imageUrl = await uploadImageToCloudinary(imageFile);
       }
 
-      await addDoc(collection(db, "listings"), {
+      await addListing({
         title,
         price: numericPrice,
         location,
         count: parseInt(count),
         description,
-        image: imageUrl, // Now storing Cloudinary URL
+        image: imageUrl, 
         userEmail: auth.currentUser.email,
-        createdAt: new Date(),
       });
 
       toast.success("Listing added!");

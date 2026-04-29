@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../firebase";
-import { setDoc, doc } from "firebase/firestore";
+import { auth } from "../firebase";
+import { createUserProfile } from "../services/userService";
 import { useToast } from "../ToastContext";
 
 export default function SignUp() {
@@ -25,11 +25,8 @@ export default function SignUp() {
       // Step 2: Get the user from Firebase Authentication
       const user = userCredential.user;
 
-      // Step 3: Set the role in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        role: role, // Role can be 'user' or 'admin'
-      });
+      // Step 3: Set the role in Firestore using userService
+      await createUserProfile(user.uid, user.email, role);
 
       toast.success("Account created successfully!");
 
