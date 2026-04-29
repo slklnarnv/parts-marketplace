@@ -1,54 +1,69 @@
 import { useCart } from "../CartContext";
 import { auth, db } from "../firebase";
-import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, addDoc, doc, runTransaction } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useToast } from "../ToastContext";
+import { getOptimizedUrl } from "../cloudinary";
 
 export default function Cart() {
   const { cart, removeFromCart, addToCart, clearCart, updateQuantity } = useCart();
   const [loading, setLoading] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
   const hasOwnItems = auth.currentUser && cart.some(item => item.userEmail === auth.currentUser.email);
 
   const handleCheckout = async () => {
     if (!auth.currentUser) {
-      alert("Please login to complete your purchase.");
+      toast.warning("Please login to complete your purchase.");
       navigate("/login");
       return;
     }
 
     if (cart.length === 0) return;
 
+    setShowConfirm(false);
     setLoading(true);
     try {
-      // 1. Check if user is trying to buy their own items
+      // Check if user is trying to buy their own items
       const ownItems = cart.filter(item => item.userEmail === auth.currentUser.email);
       if (ownItems.length > 0) {
         throw new Error(`You cannot purchase your own listings (${ownItems.map(i => i.title).join(", ")}). Please remove them from your cart.`);
       }
 
-      for (const item of cart) {
-        // Double check stock before processing
-        const itemRef = doc(db, "listings", item.id);
-        const itemSnap = await getDoc(itemRef);
-        
-        if (!itemSnap.exists()) {
-          throw new Error(`Item ${item.title} no longer exists.`);
-        }
-        
-        const currentStock = itemSnap.data().count;
-        if (currentStock < item.quantity) {
-          throw new Error(`Not enough stock for ${item.title}. Only ${currentStock} left.`);
-        }
+      // Use Firestore transaction for atomic stock check + update
+      await runTransaction(db, async (transaction) => {
+        // Phase 1: Read all item stocks
+        const itemRefs = cart.map(item => doc(db, "listings", item.id));
+        const snapshots = await Promise.all(itemRefs.map(ref => transaction.get(ref)));
 
-        // 1. Update stock
-        await updateDoc(itemRef, {
-          count: currentStock - item.quantity,
+        // Phase 2: Validate all stocks
+        snapshots.forEach((snap, index) => {
+          const item = cart[index];
+          if (!snap.exists()) {
+            throw new Error(`Item "${item.title}" no longer exists.`);
+          }
+          const currentStock = snap.data().count;
+          if (currentStock < item.quantity) {
+            throw new Error(`Not enough stock for "${item.title}". Only ${currentStock} left.`);
+          }
         });
 
-        // 2. Record transaction
+        // Phase 3: Write all updates atomically
+        snapshots.forEach((snap, index) => {
+          const item = cart[index];
+          const currentStock = snap.data().count;
+          transaction.update(itemRefs[index], {
+            count: currentStock - item.quantity,
+          });
+        });
+      });
+
+      // Record transactions after successful stock update
+      for (const item of cart) {
         await addDoc(collection(db, "transactions"), {
           itemId: item.id,
           itemTitle: item.title,
@@ -61,129 +76,146 @@ export default function Cart() {
         });
       }
 
-      alert("Purchase successful! Your orders have been placed.");
+      toast.success("Purchase successful! Your orders have been placed.");
       clearCart();
-      navigate("/listings");
+      navigate("/orders");
     } catch (err) {
       console.error("Checkout error:", err);
-      alert("Error during checkout: " + err.message);
+      toast.error("Checkout failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container" style={{ padding: "40px 20px" }}>
+    <div className="container" style={{ padding: "40px 20px", color: "var(--text-main)" }}>
       <h2 style={{ marginBottom: "30px" }}>My Shopping Cart</h2>
-      
+
       {cart.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", backgroundColor: "white", borderRadius: "8px" }}>
-          <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>Your cart is empty.</p>
+        <div style={{ textAlign: "center", padding: "60px 20px", backgroundColor: "var(--card-bg)", borderRadius: "12px", color: "var(--text-main)" }}>
+          <div style={{ fontSize: "4rem", marginBottom: "15px" }}>🛒</div>
+          <h3 style={{ marginBottom: "8px" }}>Your cart is empty</h3>
+          <p style={{ color: "var(--text-muted)", marginBottom: "25px" }}>Looks like you haven't added any parts yet.</p>
           <button onClick={() => navigate("/listings")} className="btn btn-primary">
             Browse Listings
           </button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "30px" }}>
+        <div className="cart-layout">
           <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
             {cart.map((item) => {
               const isOwnItem = auth.currentUser?.email === item.userEmail;
-              
+
               return (
-                <div key={item.id} className="card" style={{ 
-                  display: "flex", 
-                  justifyContent: "space-between", 
-                  alignItems: "center",
+                <div key={item.id} className="card cart-item" style={{
                   border: isOwnItem ? "1px solid var(--danger-color)" : "1px solid var(--border-color)",
                   position: "relative"
                 }}>
-                  <div>
-                    <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{item.title}</h3>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ${item.price}</p>
-                    {isOwnItem && (
-                      <p style={{ color: "var(--danger-color)", fontSize: "0.8rem", fontWeight: "bold", marginTop: "5px" }}>
-                        ⚠️ You cannot buy your own item
-                      </p>
-                    )}
-                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                  <div style={{ 
-                    display: "flex", 
-                    alignItems: "center",
-                    backgroundColor: "white",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "8px",
-                    overflow: "hidden"
-                  }}>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateQuantity(item, e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      style={{
-                        width: "50px",
-                        border: "none",
-                        background: "none",
-                        textAlign: "center",
-                        fontWeight: "600",
-                        fontSize: "0.95rem",
-                        padding: "8px 0",
-                        outline: "none",
-                        appearance: "textfield",
-                        MozAppearance: "textfield"
-                      }}
-                    />
-                    <div style={{ 
-                      display: "flex", 
-                      borderLeft: "1px solid var(--border-color)",
+                    {/* Thumbnail */}
+                    <div style={{
+                      width: "60px",
+                      height: "60px",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      flexShrink: 0,
                       backgroundColor: "var(--bg-color)"
                     }}>
-                      <button 
-                        onClick={() => removeFromCart(item.id)}
-                        style={{ 
-                          padding: "8px 12px", 
-                          border: "none", 
-                          borderRight: "1px solid var(--border-color)",
-                          background: "none", 
-                          cursor: "pointer",
-                          color: "var(--text-main)",
-                          fontSize: "1.2rem",
-                          display: "flex",
-                          alignItems: "center",
-                          transition: "background 0.2s"
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--border-color)"}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                      >
-                        −
-                      </button>
-                      <button 
-                        onClick={() => addToCart(item)}
-                        disabled={item.quantity >= item.count}
-                        style={{ 
-                          padding: "8px 12px", 
-                          border: "none", 
-                          background: "none", 
-                          cursor: "pointer",
-                          color: "var(--text-main)",
-                          fontSize: "1.2rem",
-                          opacity: item.quantity >= item.count ? 0.5 : 1,
-                          display: "flex",
-                          alignItems: "center",
-                          transition: "background 0.2s"
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--border-color)"}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                      >
-                        +
-                      </button>
+                      <img
+                        src={item.image ? getOptimizedUrl(item.image, 120) : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23334155' width='100' height='100'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%2394a3b8' font-size='40'%3E⚓%3C/text%3E%3C/svg%3E"}
+                        alt={item.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{item.title}</h3>
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ${item.price}</p>
+                      {isOwnItem && (
+                        <p style={{ color: "var(--danger-color)", fontSize: "0.8rem", fontWeight: "bold", marginTop: "5px" }}>
+                          ⚠️ You cannot buy your own item
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <p style={{ fontWeight: "bold", width: "80px", textAlign: "right" }}>
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      backgroundColor: "var(--card-bg)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "8px",
+                      overflow: "hidden"
+                    }}>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateQuantity(item, e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        style={{
+                          width: "50px",
+                          border: "none",
+                          background: "none",
+                          color: "var(--text-main)",
+                          textAlign: "center",
+                          fontWeight: "600",
+                          fontSize: "0.95rem",
+                          padding: "8px 0",
+                          outline: "none",
+                          appearance: "textfield",
+                          MozAppearance: "textfield"
+                        }}
+                      />
+                      <div style={{
+                        display: "flex",
+                        borderLeft: "1px solid var(--border-color)",
+                        backgroundColor: "var(--bg-color)"
+                      }}>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          style={{
+                            padding: "8px 12px",
+                            border: "none",
+                            borderRight: "1px solid var(--border-color)",
+                            background: "none",
+                            cursor: "pointer",
+                            color: "var(--text-main)",
+                            fontSize: "1.2rem",
+                            display: "flex",
+                            alignItems: "center",
+                            transition: "background 0.2s"
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--border-color)"}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                        >
+                          −
+                        </button>
+                        <button
+                          onClick={() => addToCart(item)}
+                          disabled={item.quantity >= item.count}
+                          style={{
+                            padding: "8px 12px",
+                            border: "none",
+                            background: "none",
+                            cursor: "pointer",
+                            color: "var(--text-main)",
+                            fontSize: "1.2rem",
+                            opacity: item.quantity >= item.count ? 0.5 : 1,
+                            display: "flex",
+                            alignItems: "center",
+                            transition: "background 0.2s"
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = "var(--border-color)"}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <p style={{ fontWeight: "bold", width: "80px", textAlign: "right" }}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>
@@ -200,10 +232,10 @@ export default function Cart() {
               <span>Total</span>
               <span style={{ color: "var(--primary-color)" }}>${totalPrice.toFixed(2)}</span>
             </div>
-            <button 
-              onClick={handleCheckout} 
+            <button
+              onClick={() => setShowConfirm(true)}
               disabled={loading || hasOwnItems}
-              className="btn btn-primary" 
+              className="btn btn-primary"
               style={{ width: "100%", padding: "12px" }}
             >
               {loading ? "Processing..." : hasOwnItems ? "Remove Own Items to Continue" : "Confirm Purchase"}
@@ -213,13 +245,36 @@ export default function Cart() {
                 You have items in your cart that belong to you.
               </p>
             )}
-            <button 
+            <button
               onClick={() => navigate("/listings")}
-              className="btn btn-secondary" 
+              className="btn btn-secondary"
               style={{ width: "100%", marginTop: "10px" }}
             >
               Continue Shopping
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Confirmation Modal */}
+      {showConfirm && (
+        <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
+          <div className="modal-content card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px", textAlign: "center" }}>
+            <h3 style={{ marginBottom: "15px" }}>Confirm Purchase</h3>
+            <p style={{ color: "var(--text-muted)", marginBottom: "8px" }}>
+              You are about to purchase <strong>{cart.reduce((t, i) => t + i.quantity, 0)} item(s)</strong>
+            </p>
+            <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--primary-color)", marginBottom: "25px" }}>
+              Total: ${totalPrice.toFixed(2)}
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button className="btn btn-secondary" onClick={() => setShowConfirm(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleCheckout}>
+                Complete Purchase
+              </button>
+            </div>
           </div>
         </div>
       )}

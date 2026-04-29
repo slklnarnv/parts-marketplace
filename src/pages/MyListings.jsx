@@ -10,9 +10,11 @@ import {
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { getOptimizedUrl } from "../cloudinary";
+import { useToast } from "../ToastContext";
 
 export default function MyListings() {
   const [items, setItems] = useState([]);
+  const { toast } = useToast();
   const [salesData, setSalesData] = useState({});
   const [globalStats, setGlobalStats] = useState({ totalRevenue: 0, totalItemsSold: 0 });
   const [loading, setLoading] = useState(true);
@@ -80,9 +82,9 @@ export default function MyListings() {
       try {
         await deleteDoc(doc(db, "listings", itemId));
         setItems(items.filter((item) => item.id !== itemId));
-        alert("Deleted!");
+        toast.success("Listing deleted.");
       } catch (err) {
-        alert("Delete failed.");
+        toast.error("Delete failed.");
       }
     }
   };
@@ -91,9 +93,9 @@ export default function MyListings() {
 
   return (
     <div className="container" style={{ padding: "40px 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "30px" }}>
+      <div className="my-listings-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "30px" }}>
         <h2 style={{ margin: 0 }}>Your Listings</h2>
-        <div style={{ display: "flex", gap: "20px" }}>
+        <div className="my-listings-stats" style={{ display: "flex", gap: "20px" }}>
           <div className="card" style={{ padding: "10px 20px", textAlign: "center", minWidth: "120px" }}>
             <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Total Sales</div>
             <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "var(--primary-color)" }}>{globalStats.totalItemsSold}</div>
@@ -113,7 +115,7 @@ export default function MyListings() {
             const stats = salesData[item.id] || { sold: 0, revenue: 0 };
             
             return (
-              <div key={item.id} className="card" style={{ 
+              <div key={item.id} className="card my-listing-card" style={{ 
                 position: "relative", 
                 display: "flex", 
                 gap: "32px", 
@@ -122,7 +124,7 @@ export default function MyListings() {
                 minHeight: "180px"
               }}>
                 {item.image && (
-                  <div style={{ width: "200px", borderRadius: "16px", overflow: "hidden", flexShrink: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
+                  <div className="listing-image" style={{ width: "200px", borderRadius: "16px", overflow: "hidden", flexShrink: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
                     <img 
                       src={getOptimizedUrl(item.image, 400)} 
                       alt={item.title} 
@@ -131,7 +133,7 @@ export default function MyListings() {
                   </div>
                 )}
                 
-                <div style={{ flexGrow: 1, paddingRight: "120px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-start" }}>
+                <div className="listing-content" style={{ flexGrow: 1, paddingRight: "120px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-start" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
                     <h3 style={{ margin: 0, fontSize: "1.25rem" }}>{item.title}</h3>
                     <span style={{ 
@@ -180,25 +182,92 @@ export default function MyListings() {
                   </div>
                 </div>
 
-                <div style={{ 
+                <div className="my-listing-actions" style={{ 
                   position: "absolute", 
                   right: "24px", 
                   display: "flex", 
                   flexDirection: "column", 
-                  gap: "8px" 
+                  gap: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)"
                 }}>
+                  {/* Edit button */}
                   <button 
                     onClick={() => navigate(`/edit/${item.id}`)} 
-                    className="btn btn-secondary"
-                    style={{ padding: "6px 15px", fontSize: "13px", minWidth: "80px" }}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "var(--card-bg)",
+                      color: "var(--primary-color)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                      whiteSpace: "nowrap"
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "var(--primary-color)";
+                      e.currentTarget.style.color = "white";
+                      e.currentTarget.style.transform = "scale(1.05)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.35)";
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "var(--card-bg)";
+                      e.currentTarget.style.color = "var(--primary-color)";
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)";
+                    }}
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
                     Edit
                   </button>
+
+                  {/* Delete button */}
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="btn btn-danger"
-                    style={{ padding: "6px 15px", fontSize: "13px", minWidth: "80px" }}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "var(--card-bg)",
+                      color: "var(--danger-color)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                      whiteSpace: "nowrap"
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "var(--danger-color)";
+                      e.currentTarget.style.color = "white";
+                      e.currentTarget.style.transform = "scale(1.05)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.35)";
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "var(--card-bg)";
+                      e.currentTarget.style.color = "var(--danger-color)";
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)";
+                    }}
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
                     Delete
                   </button>
                 </div>

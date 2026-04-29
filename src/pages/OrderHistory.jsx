@@ -60,15 +60,17 @@ export default function OrderHistory() {
       <h2 style={{ marginBottom: "30px" }}>Order History</h2>
 
       {orders.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", padding: "40px" }}>
-          <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>You haven't placed any orders yet.</p>
-          <Link to="/listings" className="btn btn-primary">Start Shopping</Link>
+        <div style={{ textAlign: "center", padding: "60px 20px", backgroundColor: "var(--card-bg)", borderRadius: "12px" }}>
+          <div style={{ fontSize: "4rem", marginBottom: "15px" }}>📦</div>
+          <h3 style={{ marginBottom: "8px" }}>No orders yet</h3>
+          <p style={{ color: "var(--text-muted)", marginBottom: "25px" }}>When you purchase parts, they'll show up here.</p>
+          <Link to="/listings" className="btn btn-primary">Browse Listings</Link>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
           {orders.map((order) => (
             <div key={order.id} className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px", marginBottom: "15px" }}>
+              <div className="order-header-row" style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px", marginBottom: "15px" }}>
                 <div>
                   <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Order ID:</span>
                   <span style={{ fontSize: "0.85rem", fontWeight: "500", marginLeft: "5px" }}>{order.id}</span>
@@ -78,14 +80,14 @@ export default function OrderHistory() {
                 </div>
               </div>
               
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="order-details-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{order.itemTitle}</h3>
                   <p style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
                     Seller: {order.sellerEmail}
                   </p>
                 </div>
-                <div style={{ textAlign: "right" }}>
+                <div className="order-price-col" style={{ textAlign: "right" }}>
                   <p style={{ fontSize: "0.9rem", margin: 0 }}>
                     Qty: <strong>{order.quantity || 1}</strong> × ${order.priceAtPurchase}
                   </p>
