@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth"; // Import signOut here
-import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth"; 
+import { auth } from "../firebase";
+import { getUserProfile } from "../services/userService";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -24,11 +24,11 @@ export default function Login() {
         password
       );
 
-      // Step 2: Get the user data from Firestore to check their role
-      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      // Step 2: Get the user data from Firestore to check their role using userService
+      const userData = await getUserProfile(userCredential.user.uid);
 
-      if (userDoc.exists()) {
-        const userRole = userDoc.data().role;
+      if (userData) {
+        const userRole = userData.role;
 
         // Step 3: Handle role-based navigation
         if (userRole === "suspended") {
@@ -40,7 +40,7 @@ export default function Login() {
           navigate("/"); // Redirect to home page for normal users
         }
       } else {
-        setError("User data not found in Firestore.");
+        setError("User data not found.");
       }
     } catch (error) {
       setError("Login failed: " + error.message); // Set error message

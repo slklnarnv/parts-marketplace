@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
-import { db, auth } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { auth } from "../firebase";
+import { getListings } from "../services/listingService";
+import { getSellerRating } from "../services/reviewService";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../CartContext";
 import { getOptimizedUrl } from "../cloudinary";
+import SkeletonLoader from "../SkeletonLoader";
 
 const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect fill='%23334155' width='400' height='300'/%3E%3Ctext x='200' y='160' text-anchor='middle' fill='%2394a3b8' font-size='60'%3E⚓%3C/text%3E%3C/svg%3E";
 const ITEMS_PER_PAGE = 12;
@@ -13,6 +15,7 @@ export default function Listings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [sellerRating, setSellerRating] = useState(null);
   const { addToCart, removeFromCart, getItemQuantity, updateQuantity } = useCart();
   const navigate = useNavigate();
 
@@ -24,11 +27,7 @@ export default function Listings() {
 
   const fetchListings = async () => {
     try {
-      const snapshot = await getDocs(collection(db, "listings"));
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const data = await getListings();
       setItems(data);
     } catch (err) {
       setError("Failed to fetch listings. Please try again later.");
@@ -97,8 +96,22 @@ export default function Listings() {
     setCurrentPage(1);
   }, [searchQuery, sortBy, filterStock]);
 
-  if (loading) return <div className="container" style={{ padding: 20 }}>Loading listings...</div>;
+  if (loading) return (
+    <div className="container" style={{ padding: "40px 20px" }}>
+      <h2 style={{ marginBottom: "20px" }}>All Ship Parts Listings</h2>
+      <SkeletonLoader />
+    </div>
+  );
   if (error) return <div className="container" style={{ padding: 20, color: "var(--danger-color)" }}>{error}</div>;
+
+  const handleSelectItem = async (item) => {
+    setSelectedItem(item);
+    setSellerRating(null);
+    if (item.userEmail) {
+      const ratingData = await getSellerRating(item.userEmail);
+      setSellerRating(ratingData);
+    }
+  };
 
   return (
     <div className="container" style={{ padding: "40px 20px" }}>
@@ -185,7 +198,7 @@ export default function Listings() {
                     justifyContent: "space-between",
                     cursor: "pointer"
                   }}
-                  onClick={() => setSelectedItem(item)}
+                  onClick={() => handleSelectItem(item)}
                 >
                   <div>
                     <div style={{ marginBottom: "15px", borderRadius: "8px", overflow: "hidden", height: "200px" }}>
@@ -438,6 +451,23 @@ export default function Listings() {
                 <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.9rem" }}>Stock</span>
                 <strong style={{ fontSize: "1.1rem" }}>{selectedItem.count} items</strong>
               </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", padding: "15px", backgroundColor: "var(--bg-color)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+              <div>
+                <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.9rem" }}>Seller</span>
+                <strong style={{ fontSize: "1.1rem" }}>{selectedItem.userEmail}</strong>
+              </div>
+              {sellerRating && (
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ color: "var(--text-muted)", display: "block", fontSize: "0.9rem" }}>Rating</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                    <span style={{ color: "#fbbf24", fontSize: "1.2rem" }}>★</span>
+                    <strong>{sellerRating.averageRating > 0 ? sellerRating.averageRating.toFixed(1) : "New"}</strong>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>({sellerRating.reviewCount})</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: "30px" }}>

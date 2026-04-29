@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { auth } from "../firebase";
+import { getUserOrders } from "../services/transactionService";
+import { addReview } from "../services/reviewService";
 import { Link } from "react-router-dom";
+import { useToast } from "../ToastContext";
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reviewOrder, setReviewOrder] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -17,16 +24,7 @@ export default function OrderHistory() {
       }
 
       try {
-        const q = query(
-          collection(db, "transactions"),
-          where("buyerEmail", "==", user.email),
-          orderBy("timestamp", "desc")
-        );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const data = await getUserOrders(user.email);
         setOrders(data);
       } catch (err) {
         console.error("Error fetching order history:", err);
@@ -38,6 +36,38 @@ export default function OrderHistory() {
 
     fetchOrders();
   }, []);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingReview(true);
+    try {
+      await addReview({
+        buyerEmail: auth.currentUser.email,
+        sellerEmail: reviewOrder.sellerEmail,
+        transactionId: reviewOrder.id,
+        rating,
+        comment
+      });
+      toast.success("Review submitted!");
+      setReviewOrder(null);
+      setRating(5);
+      setComment("");
+    } catch (err) {
+      toast.error("Failed to submit review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case "Pending": return "#fb923c"; // orange
+      case "Shipped": return "#3b82f6"; // blue
+      case "Delivered": return "#10b981"; // green
+      case "Cancelled": return "#ef4444"; // red
+      default: return "#64748b"; // gray
+    }
+  };
 
   if (loading) return <div className="container" style={{ padding: 20 }}>Loading your orders...</div>;
 
@@ -82,10 +112,26 @@ export default function OrderHistory() {
               
               <div className="order-details-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{order.itemTitle}</h3>
-                  <p style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>
+                  <h3 style={{ fontSize: "1.1rem", marginBottom: "5px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    {order.itemTitle}
+                    <span style={{
+                      fontSize: "0.75rem",
+                      padding: "2px 8px",
+                      borderRadius: "12px",
+                      color: "#fff",
+                      backgroundColor: getStatusColor(order.status || "Pending")
+                    }}>
+                      {order.status || "Pending"}
+                    </span>
+                  </h3>
+                  <p style={{ fontSize: "0.9rem", color: "var(--text-muted)", marginBottom: "5px" }}>
                     Seller: {order.sellerEmail}
                   </p>
+                  {(order.status === "Delivered") && (
+                     <button onClick={() => setReviewOrder(order)} className="btn btn-outline" style={{ padding: "4px 8px", fontSize: "0.8rem", marginTop: "5px", border: "1px solid var(--primary-color)", color: "var(--primary-color)", background: "transparent", cursor: "pointer", borderRadius: "4px" }}>
+                       Rate Seller
+                     </button>
+                  )}
                 </div>
                 <div className="order-price-col" style={{ textAlign: "right" }}>
                   <p style={{ fontSize: "0.9rem", margin: 0 }}>
@@ -98,6 +144,46 @@ export default function OrderHistory() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {reviewOrder && (
+        <div className="modal-overlay" onClick={() => setReviewOrder(null)}>
+          <div className="modal-content card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+            <h3 style={{ marginBottom: "15px" }}>Rate Seller</h3>
+            <p style={{ color: "var(--text-muted)", marginBottom: "20px", fontSize: "0.9rem" }}>
+              How was your experience buying "{reviewOrder.itemTitle}" from {reviewOrder.sellerEmail}?
+            </p>
+            <form onSubmit={handleReviewSubmit}>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem" }}>Rating</label>
+                <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="input-field">
+                  <option value={5}>⭐⭐⭐⭐⭐ (5/5)</option>
+                  <option value={4}>⭐⭐⭐⭐ (4/5)</option>
+                  <option value={3}>⭐⭐⭐ (3/5)</option>
+                  <option value={2}>⭐⭐ (2/5)</option>
+                  <option value={1}>⭐ (1/5)</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem" }}>Comment (Optional)</label>
+                <textarea 
+                  value={comment} 
+                  onChange={(e) => setComment(e.target.value)} 
+                  className="input-field" 
+                  rows="3"
+                  placeholder="Share details of your experience..."
+                ></textarea>
+              </div>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setReviewOrder(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={submittingReview}>
+                  {submittingReview ? "Submitting..." : "Submit Review"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

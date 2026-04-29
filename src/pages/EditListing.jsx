@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db, auth } from "../firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { auth } from "../firebase";
+import { getListingById, updateListing } from "../services/listingService";
 import { uploadImageToCloudinary, getOptimizedUrl } from "../cloudinary";
 import { useToast } from "../ToastContext";
 
@@ -21,10 +21,17 @@ export default function EditListing() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    return () => {
+      if (image && image.startsWith("blob:")) {
+        URL.revokeObjectURL(image);
+      }
+    };
+  }, [image]);
+
+  useEffect(() => {
     const fetchListing = async () => {
-      const docSnap = await getDoc(doc(db, "listings", id));
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+      const data = await getListingById(id);
+      if (data) {
         if (data.userEmail !== auth.currentUser?.email) {
           toast.error("Not authorized");
           navigate("/listings");
@@ -51,15 +58,18 @@ export default function EditListing() {
         return;
       }
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result); // For preview
-      };
-      reader.readAsDataURL(file);
+      
+      if (image && image.startsWith("blob:")) {
+        URL.revokeObjectURL(image);
+      }
+      setImage(URL.createObjectURL(file));
     }
   };
 
   const handleRemoveImage = () => {
+    if (image && image.startsWith("blob:")) {
+      URL.revokeObjectURL(image);
+    }
     setImage(null);
     setImageFile(null);
     if (fileInputRef.current) {
@@ -76,7 +86,7 @@ export default function EditListing() {
         imageUrl = await uploadImageToCloudinary(imageFile);
       }
 
-      await updateDoc(doc(db, "listings", id), {
+      await updateListing(id, {
         title,
         price: parseFloat(price),
         location,

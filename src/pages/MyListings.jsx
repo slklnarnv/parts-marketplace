@@ -1,23 +1,20 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
+import { auth } from "../firebase";
+import { getUserListings, deleteListing } from "../services/listingService";
+import { getSellerSales, updateTransactionStatus } from "../services/transactionService";
 import { useNavigate } from "react-router-dom";
 import { getOptimizedUrl } from "../cloudinary";
 import { useToast } from "../ToastContext";
+import SkeletonLoader from "../SkeletonLoader";
 
 export default function MyListings() {
   const [items, setItems] = useState([]);
+  const [sales, setSales] = useState([]);
   const { toast } = useToast();
   const [salesData, setSalesData] = useState({});
   const [globalStats, setGlobalStats] = useState({ totalRevenue: 0, totalItemsSold: 0 });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("listings");
   const navigate = useNavigate();
 
   const fetchListingsAndStats = async () => {
@@ -25,31 +22,17 @@ export default function MyListings() {
     if (!user) return;
 
     try {
-      // 1. Fetch listings
-      const q = query(
-        collection(db, "listings"),
-        where("userEmail", "==", user.email)
-      );
-      const snapshot = await getDocs(q);
-      const listingsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const listingsData = await getUserListings(user.email);
       setItems(listingsData);
 
-      // 2. Fetch transactions where this user is the seller
-      const transQ = query(
-        collection(db, "transactions"),
-        where("sellerEmail", "==", user.email)
-      );
-      const transSnapshot = await getDocs(transQ);
+      const transData = await getSellerSales(user.email);
+      setSales(transData);
       
       const stats = {};
       let totalRevenue = 0;
       let totalItemsSold = 0;
 
-      transSnapshot.docs.forEach((doc) => {
-        const data = doc.data();
+      transData.forEach((data) => {
         const itemId = data.itemId;
         const qty = data.quantity || 1;
         const revenue = data.totalPrice || (data.priceAtPurchase * qty);
@@ -80,7 +63,7 @@ export default function MyListings() {
   const handleDelete = async (itemId) => {
     if (window.confirm("Are you sure you want to delete this?")) {
       try {
-        await deleteDoc(doc(db, "listings", itemId));
+        await deleteListing(itemId);
         setItems(items.filter((item) => item.id !== itemId));
         toast.success("Listing deleted.");
       } catch (err) {
@@ -89,7 +72,22 @@ export default function MyListings() {
     }
   };
 
-  if (loading) return <div className="container" style={{ padding: 20 }}>Loading your listings...</div>;
+  const handleStatusChange = async (saleId, newStatus) => {
+    try {
+      await updateTransactionStatus(saleId, newStatus);
+      setSales(sales.map(s => s.id === saleId ? { ...s, status: newStatus } : s));
+      toast.success("Order status updated!");
+    } catch (err) {
+      toast.error("Failed to update status.");
+    }
+  };
+
+  if (loading) return (
+    <div className="container" style={{ padding: "40px 20px" }}>
+      <h2 style={{ marginBottom: "20px" }}>Your Dashboard</h2>
+      <SkeletonLoader />
+    </div>
+  );
 
   return (
     <div className="container" style={{ padding: "40px 20px" }}>
@@ -107,7 +105,23 @@ export default function MyListings() {
         </div>
       </div>
 
-      {items.length === 0 ? (
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px" }}>
+        <button 
+          className={`btn ${activeTab === 'listings' ? 'btn-primary' : 'btn-secondary'}`} 
+          onClick={() => setActiveTab("listings")}
+        >
+          My Inventory
+        </button>
+        <button 
+          className={`btn ${activeTab === 'sales' ? 'btn-primary' : 'btn-secondary'}`} 
+          onClick={() => setActiveTab("sales")}
+        >
+          Fulfillment ({sales.filter(s => s.status === 'Pending' || !s.status).length} Pending)
+        </button>
+      </div>
+
+      {activeTab === "listings" ? (
+      items.length === 0 ? (
         <p style={{ color: "var(--text-muted)" }}>You haven't posted any listings yet.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -275,6 +289,59 @@ export default function MyListings() {
             );
           })}
         </div>
+      )
+      ) : (
+        /* Fulfillment Tab */
+        sales.length === 0 ? (
+          <p style={{ color: "var(--text-muted)" }}>You haven't made any sales yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {sales.map((sale) => (
+              <div key={sale.id} className="card">
+                <div className="order-header-row" style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px", marginBottom: "15px" }}>
+                  <div>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Order ID:</span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: "500", marginLeft: "5px" }}>{sale.id}</span>
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                    {sale.timestamp?.toDate().toLocaleString()}
+                  </div>
+                </div>
+                
+                <div className="order-details-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ fontSize: "1.1rem", marginBottom: "5px" }}>{sale.itemTitle}</h3>
+                    <p style={{ fontSize: "0.9rem", color: "var(--text-muted)", marginBottom: "10px" }}>
+                      Buyer: {sale.buyerEmail}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>Status:</span>
+                      <select 
+                        value={sale.status || "Pending"} 
+                        onChange={(e) => handleStatusChange(sale.id, e.target.value)}
+                        className="input-field"
+                        style={{ width: "auto", margin: 0, padding: "5px 10px" }}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="order-price-col" style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: "0.9rem", margin: 0 }}>
+                      Qty: <strong>{sale.quantity || 1}</strong> × ${sale.priceAtPurchase}
+                    </p>
+                    <p style={{ fontSize: "1.1rem", fontWeight: "bold", color: "var(--success-color)", marginTop: "5px" }}>
+                      Revenue: ${sale.totalPrice || (sale.priceAtPurchase * (sale.quantity || 1))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   );
