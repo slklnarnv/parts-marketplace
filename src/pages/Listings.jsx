@@ -122,14 +122,14 @@ export default function Listings() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field"
-            style={{ paddingLeft: "38px" }}
+            style={{ paddingLeft: "38px", marginBottom: 0 }}
           />
         </div>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
           className="input-field"
-          style={{ width: "auto", minWidth: "160px" }}
+          style={{ width: "auto", minWidth: "160px", marginBottom: 0 }}
         >
           <option value="newest">Newest First</option>
           <option value="price-low">Price: Low → High</option>
@@ -195,7 +195,7 @@ export default function Listings() {
                         style={{ width: "100%", height: "100%", objectFit: "cover" }} 
                       />
                     </div>
-                    <h3 style={{ marginBottom: "10px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px" }}>
+                    <h3 style={{ marginBottom: "10px", borderBottom: "1px solid var(--border-color)", paddingBottom: "10px", wordBreak: "break-word" }}>
                       {item.title}
                     </h3>
                     <div style={{ marginBottom: "15px" }}>
@@ -209,7 +209,8 @@ export default function Listings() {
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         height: "3em",
-                        lineHeight: "1.5em"
+                        lineHeight: "1.5em",
+                        wordBreak: "break-all"
                       }}>
                         {item.description}
                       </p>
