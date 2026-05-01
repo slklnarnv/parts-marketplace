@@ -35,7 +35,7 @@ A modern, full-featured e-commerce platform for buying and selling marine/ship p
 - **Skeleton Loading**: Professional loading states
 - **Protected Routes**: Role-based route protection
 - **Context API**: State management for authentication and cart
-- **Responsive UI**: Mobile-first design approach
+- **Responsive UI**: Mobile and Desktop design approach
 
 ## 🚀 Getting Started
 
@@ -131,7 +131,7 @@ src/
 
 ## 🔐 Security
 
-- Authentication via Firebase Authentication
+- Authentication via Firebase
 - Role-based access control for protected routes
 - Secure session management
 - Environment variable protection for sensitive data
@@ -156,12 +156,10 @@ Contributions are welcome! Feel free to:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## 💬 Support
 
 For support, open an issue on the [GitHub Issues](https://github.com/slklnarnv/parts-marketplace/issues) page.
 
 ---
-
-**Made with ❤️ by the MarineParts Team**
